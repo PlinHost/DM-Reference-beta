@@ -401,6 +401,7 @@ function makeNav(article) {
 			li.appendChild(a = document.createElement('a'));
 			a.href = '#'+sub;
 			// change the text to get rid of some extraneous stuff
+			item = item.replace(/^.*\((applied to .*)\)$/,'$1');	// turn proc (applied to a matrix) to just "applied to a matrix"
 			item = item.replace(/ \(.*\)$/,'');	// get rid of parentheses at end
 			item = item.replace(/^(list|matrix)\s+operators$/,'operators');	// change "X operators" to "operators" for certain types
 			item = item.replace(/\s+(proc|var|statement|operator|filter|parameter|control|setting)s?$/,'');	// change "key var" to "key"
@@ -501,13 +502,11 @@ function prettify(article) {
 			j = n.getAttribute('span') || 1;
 			while(j-- > 0) d.push(n);
 		}
-		console.log(d);
 		p = x.parentNode;
 		p.removeChild(x);
 		lr = [];
 		for(i=j=r=0,a=p.querySelectorAll('tr,th,td'),l=a.length; i<l; ++i) {
 			x = a[i];
-			console.log(x);
 			if(x.tagName == 'TR') {j=0; ++r; continue;}
 			while(lr[j]) {	// look out for for previous columns with rowspan
 				f = lr[j].cell.rowSpan;
@@ -516,7 +515,6 @@ function prettify(article) {
 			}
 			// apply col styles
 			if((n=d[j])) {
-				console.log('Apply '+j, x);
 				if(n.className) x.className += ' '+n.className;
 				if(n.getAttribute('style')) x.setAttribute('style',n.style.cssText+x.style.cssText);
 			}
@@ -693,6 +691,36 @@ function collapse() {
 	}
 
 	setInterval(hashpoll, 100);
+}
+
+function search(pattern, params) {
+	var a=document.querySelectorAll('.article'),h,i,l,t,m,ret={},tp,pl,r;
+	if(!params) params = {};
+	pattern = pattern.trim();
+	if(!pattern) return ret;
+	if(!params.regex) {pl=pattern.length; pattern = pattern.replace(/[\\.*+?{}()[\]|^$]/g, "\\$&");}
+	else pl=1;
+	tp = new RegExp(pattern, params.caseSensitive?'':'i');
+	pattern = new RegExp(pattern, params.caseSensitive?'g':'ig');
+	for(i=0,l=a.length; i<l; ++i) {
+		t = a[i].innerText;
+		if((m=t.match(pattern))) {
+			h = a[i].querySelector('h2');
+			if(!h) continue;
+			// Relevance is roughly pattern length / article length, raised to 1/N power where N = # of matches
+			r = Math.pow((pl-0.0)/t.length, 1.0/m.length);
+			if((m=h.innerText.match(tp))) {
+				r += 1.0;	// title match adds a lot to relevance
+				if(!m.index) {
+					r += 1.0;	// title match beginning with pattern adds even more relevance
+					if(m[0].length+m.index == h.innerText.length) r += 1.0;	// full match is best of all
+				}
+			}
+			// TODO: find a way to get a good excerpt out of the article, excluding title, see-also, and xmp/pre blocks
+			ret[a[i].getAttribute('name')] = {relevance:r, name:h.textContent};
+		}
+	}
+	return ret;
 }
 
 function lenfrom(node,parent,offset) {

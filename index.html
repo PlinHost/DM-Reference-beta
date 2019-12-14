@@ -12,7 +12,7 @@
 			if(m.source == ref || m.source == ref.contentWindow) {
 				contents.contentWindow.postMessage(m.data, '*');
 				try {
-					if(m.data.indexOf("nav:") == 0) {
+					if(m.data.match(/^nav:/)) {
 						var h = m.data.substr(4);
 						if(!h.match(/^#/)) h = '#'+h;
 						if(window.location.hash != h) {
@@ -20,7 +20,11 @@
 							catch(_) {window.location.hash = h;}
 						}
 					}
+					else if(m.data.match(/^search:/)) contents.contentWindow.postMessage(m.data,'*');
 				} catch(_){}
+			}
+			else if(m.source == contents || m.source == contents.contentWindow) {
+				if(m.data.match(/^search:/)) ref.contentWindow.postMessage(m.data, '*');
 			}
 		} catch(_){console.log(_);}
 	});
@@ -87,7 +91,7 @@
 </head>
 
 <table><tr>
-<td class=contents><iframe id="contents" src="contents.html"></iframe></td>
+<td class=contents><iframe id="contents" name="contents" src="contents.html"></iframe></td>
 <td id=divider></td>
 <td><iframe src="info.html" id="ref" name="ref" onload="hashchange()"></iframe></td>
 </tr></table>
