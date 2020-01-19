@@ -9990,7 +9990,6 @@ not change the overlay, which is simply a "snapshot" of the original image.
 <dd><a href=#/atom/var/text>text</a>
 <dd><a href=#/atom/var/dir>dir</a>
 <dd><a href=#/atom/var/filters>filters</a>
-<dd><a href=#/atom/var/maptext>maptext</a>
 <dd><a href=#/image/var/loc>loc</a>
 <dd><a href=#/atom/var/maptext>maptext</a>
 <dd><a href=#/atom/var/maptext_width>maptext_width</a>
@@ -15632,6 +15631,7 @@ Consult the appropriate entry for more information.
 
 <dl><dt><b>Format:</b>
 <dd>for (Var [as Type] [in List]) Statement
+<dd>for (Var in Start to End [step Step]) Statement
 </dl>
 
 <dl><dt><b>Args:</b>
@@ -15640,6 +15640,9 @@ Consult the appropriate entry for more information.
 <dd>Type: One or more of area, turf, mob, or obj, ORed together.  If no
      type is specified, the declared type of Var will be used to skip over
      inappropriate elements in the list.
+<dd>Start: A starting numeric value.
+<dd>End: An ending numeric value (inclusive).
+<dd>Step: An increment for the numeric value; default is 1.
 </dl>
 
 <h3>Example:</h3>
@@ -15652,6 +15655,12 @@ for(M in view())
 
 <p>This loops M through the mobs in view(), outputting the name at each
 iteration.
+
+<p>When you loop through a list, with the exception of looping through
+world, you're actually looping through a copy of that list. If the list
+changes, those changes won't have any bearing on this loop. If you want to
+be able to handle a list that might change, you'll need to use the
+<a href=#/proc/for/loop>for loop proc</a> instead.
 
 <p>You can declare the variable right inside the for statement.  Its scope
 is entirely contained within the for statement, so it will not conflict with
@@ -15667,6 +15676,26 @@ client/verb/who()
 <p>If the loop var has a type, a hidden <tt>istype()</tt> call is included in
 the code. Only items of that type, or its descendants, are handled within the
 loop. That means null values and objects of unrelated types will be skipped.
+
+<p>The numeric loop form is a quick internal version of the
+<a href=#/proc/for/loop>for loop proc</a>. It's equivalent to
+<tt>for(Var = Start, Var &lt;= End, Var += Step)</tt> unless Step is
+negative, in which case a &gt;= comparison is used instead. The main
+difference is that unlike in a for loop proc, the values of Step and
+End are calculated at the beginning and never change after that, so an
+expression like <tt>list.len</tt> that might be subject to change will not be
+read again&mdash;in much the same way that looping through a list only loops
+through a copy of that list.
+
+<h3>Example:</h3>
+<xmp>
+for(var/count in 1 to 100)
+   src << count
+</xmp>
+
+<p>Note: Although you can use fractional values for <tt>step</tt> in this
+numeric format, there may be accuracy considerations to keep in mind. See
+<a href=#/{notes}/numbers>Numbers</a> for more information.
 
 <hr>
 
@@ -15711,6 +15740,10 @@ for(i=0, i<3, i++)
 1
 2
 </xmp>
+
+<p>Note: An Inc statement like <tt>i += 0.1</tt> is perfectly valid, but
+you should keep in mind that numerical accuracy is not exact. See
+<a href=#/{notes}/numbers>Numbers</a> for more information.
 
 <hr>
 
@@ -21615,6 +21648,8 @@ client will play the first compatible sound in the list.
 <dd><a href=#/sound/var/channel>channel</a>
 <dd><a href=#/sound/var/volume>volume</a>
 <dd><a href=#/sound/var/frequency>frequency</a>
+<dd><a href=#/sound/var/len>len</a>
+<dd><a href=#/sound/var/offset>offset</a>
 <dd><a href=#/sound/var/pan>pan</a>
 <dd><a href=#/sound/var/priority>priority</a>
 <dd><a href=#/sound/var/status>status</a>
@@ -21632,6 +21667,7 @@ client will play the first compatible sound in the list.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/sound>sound proc</a>
 <dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
 </dl>
 
 <p>This is the file that will be played when the sound is sent to a player.
@@ -21641,6 +21677,8 @@ will play the first compatible sound in the list.  This can be useful for
 developing webclient games, where .ogg is preferred by most browsers for
 audio, but .mp3 is needed for others.
 
+<p>This var may be filled in by the <tt>SoundQuery</tt> proc.
+
 <hr>
 
 <a name=/sound/var/repeat>
@@ -21649,6 +21687,7 @@ audio, but .mp3 is needed for others.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/sound>sound proc</a>
 <dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -21658,6 +21697,8 @@ audio, but .mp3 is needed for others.
 <p>Set to 1 to repeat the sound indefinitely once it begins playing, 2 to
 repeat it forwards and backwards.
 
+<p>This var may be filled in by the <tt>SoundQuery</tt> proc.
+
 <hr>
 
 <a name=/sound/var/wait>
@@ -21666,6 +21707,7 @@ repeat it forwards and backwards.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/sound>sound proc</a>
 <dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -21675,6 +21717,9 @@ repeat it forwards and backwards.
 <p>Set to 1 to wait for other sounds in this channel to finish before playing
 this one.
 
+<p>The <tt>SoundQuery</tt> proc fills in this value with the total duration of
+sounds that are queued to be played on this channel.
+
 <hr>
 
 <a name=/sound/var/channel>
@@ -21683,6 +21728,7 @@ this one.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/sound>sound proc</a>
 <dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -21693,6 +21739,8 @@ this one.
 For values of 0 or less, any available channel will be chosen. If you play a
 null sound (no file) on channel 0, the settings for the datum will affect all
 channels.
+
+<p>This var may be filled in by the <tt>SoundQuery</tt> proc.
 
 <hr>
 
@@ -21742,6 +21790,38 @@ twice as slow.
 
 <hr>
 
+<a name=/sound/var/offset>
+<h2 byondver=513>offset var (sound)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
+</dl>
+
+<p>This value is set by the <tt>SoundQuery</tt> proc and represents the
+current time index, in seconds, of a sound playing on the client.
+
+<p>Other uses for this var may be considered in the future.
+
+<hr>
+
+<a name=/sound/var/len>
+<h2 byondver=513>len var (sound)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
+</dl>
+
+<p>This value is set by the <tt>SoundQuery</tt> proc and represents the
+length, in seconds, of a sound playing on the client. Frequency is taken into
+into consideration, so a higher frequency means the sound takes a shorter time
+to play and therefore has a shorter length.
+
+<p>Other uses for this var may be considered in the future.
+
+<hr>
+
 <a name=/sound/var/pan>
 <h2>pan var (sound)</h2>
 
@@ -21782,6 +21862,7 @@ priority. The maximum value is 255. 0 is the lowest.
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/sound/var>vars (sound)</a>
+<dd><a href=#/client/proc/SoundQuery>SoundQuery proc (client)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -21818,6 +21899,9 @@ status of the sound in that mode.
 <p><tt>SOUND_UPDATE</tt> updates the settings for the sound currently playing
 on the specified channel. If this flag is not set or no channel is specified,
 the sound will start again from the beginning.
+
+<p>Some of the flags for this value may be filled in by the
+<tt>SoundQuery</tt> proc.
 
 <hr>
 
@@ -22937,6 +23021,7 @@ procs, use /var and /proc instead.
 <dd><a href=#/world/proc/New>New</a>
 <dd><a href=#/world/proc/OpenPort>OpenPort</a>
 <dd><a href=#/world/proc/PayCredits>PayCredits</a>
+<dd><a href=#/world/proc/Profile>Profile</a>
 <dd><a href=#/world/proc/Reboot>Reboot</a>
 <dd><a href=#/world/proc/Repop>Repop</a>
 <dd><a href=#/world/proc/SetConfig>SetConfig</a>
@@ -23873,6 +23958,55 @@ mob/proc/ItemShop()
 by adding these as extra arguments, but this is not recommended for security
 reasons. If you use this feature, it should only be on games that cannot be
 downloaded by the public.
+
+<hr>
+
+<a name=/world/proc/Profile>
+<h2 byondver=513>Profile proc (world)</h2>
+
+<dl><dt><b>Format:</b>
+<dd>Profile(command, format)
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>Profilng data or null
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>command: A numerical value that says whether to start, stop, refresh, etc.
+<dd>format: Optional format for output data
+</dl>
+
+<p>Interacts with the built-in server profiler without requiring the host to do
+so via Dream Daemon, or an authorized player via Dream Seeker.
+
+<p>The <tt>command</tt> value is built from bitflags, so it can combine any of
+these three values via the <tt>|</tt> operator:
+
+<dl class=codedt>
+<dt>PROFIILE_STOP</dt><dd>Stop profiling. Not using this flag will start/continue profiling.</dd>
+<dt>PROFIILE_CLEAR</dt><dd>Clear all profile data. This will also cause the proc to return null.</dd>
+<dt>PROFIILE_AVERAGE</dt><dd>Any output data should use average times instead of total times.</dd>
+</dl>
+
+<p>These additional values are also defined for convenience:
+
+<dl class=codedt>
+<dt>PROFIILE_START</dt><dd>Start/continue profiling but don't clear any existing data.</dd>
+<dt>PROFIILE_REFRESH</dt><dd>Currently this is the same as <tt>PROFILE_START</tt>.</dd>
+<dt>PROFIILE_RESTART</dt><dd>Start profiling and clear existing data.</dd>
+</dl>
+
+<p>By default, data will be returned as a list. The first six values are the
+column names: <tt>"name"</tt>, <tt>"self"</tt>, <tt>"total"</tt>,
+<tt>"real"</tt>, <tt>"over"</tt>, and <tt>"calls"</tt>, corresponding to the
+columns in the profiler. These are followed by the profile data for each proc,
+with the data being in the same column order. E.g. the next six items
+represent the first proc in the profile.
+
+<p>The optional <tt>format</tt> argument however can be used to return the
+data in other formats. Currently the only accepted value is <tt>"json"</tt>,
+which will output the same data in JSON format.
 
 <hr>
 
@@ -26288,6 +26422,10 @@ accuracy. Again you can divide by powers of 2 easily enough, and you can
 divide an integer by any of its factors (like dividing 9 by 3) without a
 problem, but a fraction like 1/3 will repeat forever so it gets rounded
 to as much precision as floating point can manage.
+
+<p>In decimal, floating point numbers have at least six decimal digits of
+precision. Since they're actually stored in binary, their true precision
+is exactly 24 bits.
 
 <hr>
 
