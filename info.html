@@ -394,7 +394,7 @@ not care about certain events.
 <dt>For MouseDrag() and MouseDrop():</dt>
   <dd>client/MouseDrag(src_object, over_object, src_location, over_location, src_control, over_control, params)<br/>
   atom/MouseDrag(over_object, src_location, over_location, src_control, over_control, params)</dd>
-<dt>For MouseWeel():</dt>
+<dt>For MouseWheel():</dt>
   <dd>client/MouseWheel(object, delta_x, delta_y, location, control, params)<br/>
   atom/MouseWheel(delta_x, delta_y, location, control, params)</dd>
 </dl>
@@ -3804,10 +3804,11 @@ will be copied.
 <dd><b>RESET_TRANSFORM</b>: If this is an overlay/image/etc., ignore the parent's transform
 <dd><b>NO_CLIENT_COLOR</b>: Ignore client.color
 <dd byondver=510><b>KEEP_TOGETHER</b>: Draw this icon along with its overlays and underlays, as one unit
-<dd byondver=510><b>KEEP_APART</b>: Detach from a parent icon that uses KEEP_TOGETHER
+<dd byondver=510><b>KEEP_APART</b>: Detach from a parent icon that uses <tt>KEEP_TOGETHER</tt>
 <dd byondver=510><b>PLANE_MASTER</b>: Groups all other icons in the same plane
 <dd byondver=510><b>TILE_BOUND</b>: Avoids more accurate visibility calculations
 <dd byondver=511><b>PIXEL_SCALE</b>: Use point sampling when transforming this icon
+<dd byondver=513><b>PASS_MOUSE</b>: If this icon has a <tt>render_source</tt>, pass mouse any hits to the render source
 </dl>
 
 <p>The appearance_flags value controls miscellaneous behavior of an atom or
@@ -3840,9 +3841,12 @@ automatically have <tt>KEEP_APART</tt> set and therefore won't be included.
 
 <h3 byondver=510>KEEP_APART</h3>
 
-<p>If this appearance is a child of something that uses KEEP_TOGETHER, it will
-be separated out from the main icon and drawn separately.  This may be useful
-for things such as health meters, for instance.
+<p>If this appearance is a child of something that uses <tt>KEEP_TOGETHER</tt>,
+it will be separated out from the main icon and drawn separately.  This may be
+useful for things such as health meters, for instance.
+
+<p>This flag is automatically applied to icons that are on a different plane
+from their parents.
 
 <h3 byondver=510>PLANE_MASTER</h3>
 
@@ -3910,6 +3914,14 @@ texture sampling which produces a nice smooth effect. If you want a granular
 pixel-art effect instead, <tt>PIXEL_SCALE</tt> will do that for you by using
 nearest-neighbor sampling.
 
+<h3 byondver=513>PASS_MOUSE</h3>
+
+<p>If this object has a <tt>render_source</tt> it will take on the rendered
+appearance of another object (source). This is just a visual copy, so the
+mouse still interacts with this object, not the source. The <tt>PASS_MOUSE</tt>
+flag causes any mouse interaction to happen with the source instead of this
+object.
+
 <hr>
 
 <a name=/atom/var/blend_mode>
@@ -3919,6 +3931,7 @@ nearest-neighbor sampling.
 <dd><a href=#/atom/var>vars (atom)</a>
 <dd><a href=#/atom/var/alpha>alpha var (atom)</a>
 <dd><a href=#/atom/var/color>color var (atom)</a>
+<dd><a href=#/atom/var/appearance_flags>appearance_flags var (atom)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -3930,11 +3943,14 @@ nearest-neighbor sampling.
 <dd>BLEND_OVERLAY
 <dd>BLEND_ADD
 <dd>BLEND_SUBTRACT<small>*</small>
-<dd>BLEND_MULTIPLY<small>*</small>
+<dd>BLEND_MULTIPLY<small>*&dagger;</small>
+<dd byondver=513>BLEND_INSET_OVERLAY<small>*&dagger;</small>
 </dl>
 
 <p>[<small>*</small> This blend type appears only when using graphics
-hardware mode. It is also not visible in the map editor.]
+hardware mode. It is also not visible in the map editor.]<br/>
+[<small>&dagger;</small> Since the alpha of the icon underneath is used for
+alpha masking, mouse hits take it into account.]
 
 <p>Controls the way the atom's icon is blended onto the icons behind it. The
 blend mode used by an atom is inherited by any attached overlays, unless they
@@ -3954,6 +3970,12 @@ special effects.
 behind it. This is typically only useful for applying a colored light effect;
 for simply darkening, using a translucent black icon with normal overlay
 blending is a better option.
+
+<p><tt>BLEND_INSET_OVERLAY</tt> overlays the icon, but masks it by the
+image being drawn on. This is pretty much not at all useful directly on the
+map, but can be very useful for an overlay for an atom that uses
+<tt>KEEP_TOGETHER</tt> (see <a class=code href=#/atom/var/appearance_flags>appearance_flags</a>),
+or for the <a href=#/{notes}/filters/layer>layering filter</a>.
 
 <hr>
 
@@ -4627,6 +4649,7 @@ mouse.  You control the real behavior with the associated procedures.
 <dd><a href=#/atom/var/overlays>overlays var (atom)</a>
 <dd><a href=#/atom/var/underlays>underlays var (atom)</a>
 <dd><a href=#/atom/var/vis_contents>vis_contents var (atom)</a>
+<dd><a href=#/atom/var/render_source>render_source var (atom)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -4635,8 +4658,8 @@ mouse.  You control the real behavior with the associated procedures.
 
 <dl><dt><b>Possible values:</b>
 <dd>0  // transparent to mouse
-<dd>1  // opaque where icon is also opaque
-<dd>2  // completely opaque
+<dd>1  // mouse-opaque where icon is also opaque
+<dd>2  // completely mouse-opaque
 </dl>
 
 <p>This may be used to control how mouse operations on an object are
@@ -4654,7 +4677,7 @@ hand, are separate objects that can act like overlays in some ways, but
 because they're separate their <tt>mouse_opacity</tt> <i>is</i> taken into
 account.
 
-<p>When this is applied to a PLANE_MASTER object (see
+<p>When this is applied to a <tt>PLANE_MASTER</tt> object (see
 <a href=#/atom/var/appearance_flags>appearance_flags</a>), a value of 0 means
 everything on the plane is mouse-transparent.  1 means everything on the
 plane is mouse-visible (using the objects' normal mouse_opacity), but the
@@ -5005,6 +5028,7 @@ preferably much smaller.
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/atom/var/render_target>render_target var (atom)</a>
+<dd><a href=#/atom/var/appearance_flags>appearance_flags var (atom)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -5030,6 +5054,11 @@ visual contents, those will still be drawn as well.
 <p>If an entire <a href=#/atom/var/appearance_flags><tt>PLANE_MASTER</tt></a>
 was the render source, some vars like <tt>pixel_x/y/w/z</tt> will not apply,
 but you can use <tt>transform</tt>.
+
+<p>Note: Any mouse hits on this object belong to the object itself, not to the
+object used in the <tt>render_source</tt> or its children. If you want mouse
+clicks and other behavior to go to the source, use the <tt>PASS_MOUSE</tt>
+<a href=#/atom/var/appearance_flags>appearance flag</a>.
 
 <hr>
 
@@ -8894,10 +8923,13 @@ MyType
 this time, as though <code>del</code> were called on each one of them.
 </dl>
 
-<p>When the world is destroyed, the Del() proc is not automatically called.
-The only object for which it is called is <a href=#/world>/world</a>.  If you
-need the Del() proc for a particular object to be called at that time, you
-should explicitly call it from world/Del().
+<p>When the world is destroyed, the <tt>Del()</tt> proc is not automatically
+called. The only object for which it is called is <a href=#/world>/world</a>.
+If you need the <tt>Del()</tt> proc for a particular object to be called at
+that time, you should explicitly call it from <tt>world/Del()</tt>.
+
+<p>Note: <b>Always</b> call <tt>..()</tt> at the end of the proc if you
+override it.
 
 <hr>
 
@@ -11566,7 +11598,8 @@ obj
 
 <p>Each line has higher order of operations than the next.  Operators within
 a line have equal precedence and therefore are processed from left to right
-as they occur in an expression.
+as they occur in an expression. (Assignment, or operate-and-assign, are
+processed from right to left.)
 
 <p>Expressions of the form: A #= B are shorthand for:  A = A # B
 
@@ -16356,16 +16389,29 @@ specify a new icon, it will be reset to the original one.
 </dl>
 
 <dl><dt><b>Format:</b>
-<dd>input(Usr=usr,Message,Title,Default) as Type in List
+<dd>input(Recipient=usr,Message,Title,Default) as Type in List
 </dl>
 
 <dl><dt><b>Returns:</b>
 <dd>User's response.
 </dl>
 
-<p>This sleeps the current proc until the user responds to the input dialog.
-The only required argument is the message.  The type may be any combination of
-input types allowed for verb arguments.  The default is <code>text</code>.
+<dl><dt><b>Args:</b>
+<dd>Recipient: The user who will see this input prompt.
+<dd>Message: A message in the prompt, to tell the user what it's asking for.
+<dd>Title: The title of the prompt window.
+<dd>Default: Default value if the user cancels the input.
+<dd>Type: A verb input type, such as <tt>text</tt>, <tt>message</tt>, <tt>num</tt>, <tt>anything</tt>. If you omit "as Type", the type defaults to <tt>text</tt>.
+<dd>List: An optional list of items to choose from.
+</dl>
+
+<p>Creates a prompt dialog that asks the user for a response. The current proc
+sleeps until they respond.
+
+<p>The only required argument is the message.  The type may be any combination of
+input types allowed for verb arguments, which can be combined with the <tt>|</tt>
+operator. The <tt>null</tt> type will allow the user to cancel, e.g.
+<tt>as null | anything in contents</tt>.
 
 <h3>Example:</h3>
 <xmp>
@@ -16381,8 +16427,65 @@ mob/verb/create_character()
 
 <p>If the target of the input prompt is not a player, the result will be the
 default value.  If no default value is specified and null is allowed by the
-input type, that will be returned.  Otherwise, an error will result,
-crashing the proc that called input().
+input type, null will be returned.  Otherwise, an error will result, crashing
+the proc that called <tt>input()</tt>.
+
+<p>A more common use for <tt>input()</tt> is to give a player a list of
+things to choose from. For example, this is a simple shopkeeper NPC, where
+the shopkeeper's inventory is its contents.
+
+<h3>Example:</h3>
+<xmp>
+mob/shopkeeper/verb/Buy()
+   var/list/options = list()
+   var/obj/item
+   for(item in src)
+      // show a pretty list of options with prices included
+      options["[item]: $[item.price]"] = item
+   var/choice = input("Buy something!", "Shop") as null|anything in options
+   item = options[choice]
+   if(!item) return     // user canceled
+   if(item.price > usr.gold)
+      usr << "You can't afford that."
+   else
+      // give the buyer a copy of the item
+      var/t = item.type
+      new t(usr)
+      usr.gold -= item.price
+      usr << "You bought \a [item] for $[item.price]."
+</xmp>
+
+<p>Using <tt>as num</tt> is another popular input choice, which you might use
+for haggling, deciding how many of an item to pick up or drop, etc.
+
+<p class="note security">This next part is important! Always validate input from a
+user to make sure it's correct.
+
+<p>You should be sure to sanitize any user input to make sure the value is
+valid. For instance, if you have a verb that gives gold to another player, you
+should check that the amount isn't negative and doesn't contain any fractions,
+and isn't more than they have.
+
+<h3>Example:</h3>
+<xmp>
+mob/player/verb/Give_Gold()
+   set src in oview(1)
+   var/amount = input("How much?", "Give gold") as null|num
+   if(isnull(amount)) return
+   amount = round(amount)   // round down to a whole number
+   amount = min(amount, usr.gold)   // don't give more than you have
+   if(amount <= 0) return   // ignore negatives and 0
+   gold += amount
+   usr.gold -= amount
+   usr << "You gave [src] $[amount]."
+   src << "[src] gave you $[amount]."
+</xmp>
+
+<p>Likewise if you're allowing a user to input text, it too should be
+sanitized. If they shouldn't enter multi-line text, you should strip out
+<tt>"\n"</tt> characters. If they're putting in something like a character
+name, strip out any HTML via <tt>html_encode()</tt>, or you can simply
+reject anything that contains invalid characters and make them do it again.
 
 <hr>
 
@@ -16706,6 +16809,7 @@ global, const, or tmp will return 1.
 
 <dl><dt><b>Format:</b>
 <dd>istype(Val,Type)
+<dd>istype(Val)
 </dl>
 
 <dl><dt><b>Returns:</b>
@@ -17554,7 +17658,8 @@ work with character counts instead of bytes, at a performance cost. See the
 </dl>
 
 <dl><dt><b>Format:</b>
-<dd>num2text(N,SigFig=6)
+<dd>num2text(N, SigFig=6)
+<dd byondver=513>num2text(N, Digits, Radix)
 </dl>
 
 <dl><dt><b>Returns:</b>
@@ -17564,6 +17669,8 @@ work with character counts instead of bytes, at a performance cost. See the
 <dl><dt><b>Args:</b>
 <dd>N: A number.
 <dd>SigFig: Number of significant digits.
+<dd>Digits: Minimum number of digits
+<dd>Radix: The base of the number, e.g. 16 is hexadecimal.
 </dl>
 
 <p>Get the text string for a number.  The number of significant digits
@@ -17572,7 +17679,22 @@ scientific notation will only be used when there are more than 6 digits.
 
 <h3>Example:</h3>
 <xmp>
+T = num2text(12)  // = "12"
 T = num2text(12,1)  // = "1.2e1"
+</xmp>
+
+<p>The Radix format is intended for converting numbers to bases other than
+10, although you can still use 10. In this format, Digits represents the
+minimum number of digits to use, and the result will be left-padded with
+zeroes if necessary. Also, in this form only the integer part of the number
+is used, and it can't be any larger than what a 32-bit integer could store
+(about 4 billion). These limitations may be lessened or removed in the future,
+but this format was mainly intended for simple conversions.
+
+<h3>Example:</h3>
+<xmp>
+world << num2text(11, 2, 16)  // "0b"
+world << num2text(343, 0, 7)  // "1000"
 </xmp>
 
 <hr>
@@ -17869,14 +17991,19 @@ set <tt>list["key"]</tt> to a list containing <tt>"value1"</tt> and
 
 <dl><dt><b>Format:</b>
 <dd>pick(Val1,Val2,...)
+<dd>pick(List)
 </dl>
 
 <dl><dt><b>Returns:</b>
 <dd>One of the given values randomly chosen.
 </dl>
 
-<p>To make a particular value more or less likely to be chosen, a relative
-probability may be specified like this:
+<p>Randomly chooses an item from a list or from the arguments provided. If
+only one argument is included and it is a list, then the item is chosen from
+that list.
+
+<p>When not using the list form, you can make a particular value more or less
+likely to be chosen by providing a relative probability like this:
 
 <xmp>
 prob(P); Val
@@ -17901,9 +18028,7 @@ obj/food
     del(src)
 </xmp>
 
-<p>Also, to pick a value randomly from a list, simply pass the list as the
-sole argument into pick().  In this case, there is no provision for weighting
-the probabilities.  All items in the list are equally likely.
+<p>There is no analogous weighted format for the list version of this proc.
 
 <hr>
 
@@ -18265,12 +18390,12 @@ components of a color.
 </dl>
 
 <p>A way of representing a color to be used in conjunction with icon
-arithmetic.  The colors rgb(0,0,0) and rgb(255,255,255) represent black and
-white, two corners of the "color cube".
+arithmetic.  The colors <tt>rgb(0,0,0)</tt> and <tt>rgb(255,255,255)</tt>
+represent black and white, two corners of the "color cube".
 
 <h3>Example:</h3>
 <xmp>
-mob/proc/hurtme() // make a mob look damaged by adding red to his icon
+mob/proc/hurtme() // make a mob look damaged by adding red to its icon
   src.icon += rgb(20,0,0)
 </xmp>
 
@@ -19636,10 +19761,12 @@ mob/oracle/verb/tell(T as text)
 
 <dl><dt><b>Format:</b>
 <dd>text2num(T)
+<dd byondver=513>text2num(T, radix)
 </dl>
 
 <dl><dt><b>Args:</b>
 <dd>T: A text string.
+<dd>radix: The radix/base of the number, e.g. 16 for hexadecimal
 </dl>
 
 <dl><dt><b>Returns:</b>
@@ -19654,6 +19781,8 @@ numeric portion, the result is null.
 <xmp>
 var/number = text2num("123")  // = 123
 </xmp>
+
+<p>The optional radix, which defaults to 10, can be any integer from 2 to 36.
 
 <hr>
 
@@ -19852,6 +19981,12 @@ dir = turn(dir, -90)   // dir = north
 dir = turn(dir, 45)    // dir = northwest
 </xmp>
 
+<p>Only multiples of 45 are allowed for angles. If an invalid angle is used,
+it will be treated as the closest multiple of 45 to 0.
+
+<p>If the supplied Dir is invalid, such as 0, or something like UP or DOWN,
+the result is a random direction unless the angle is also 0.
+
 <hr>
 
 <a name=/proc/turn/icon>
@@ -19937,7 +20072,8 @@ mob/verb/drink()
 </dl>
 
 <dl><dt><b>Returns:</b>
-<dd>A list of all types that are derived from the specified "base" types.
+<dd>A list of all types that are derived from the specified "base" types,
+including the base types themselves.
 </dl>
 
 <dl><dt><b>Args:</b>
@@ -23984,17 +24120,17 @@ so via Dream Daemon, or an authorized player via Dream Seeker.
 these three values via the <tt>|</tt> operator:
 
 <dl class=codedt>
-<dt>PROFIILE_STOP</dt><dd>Stop profiling. Not using this flag will start/continue profiling.</dd>
-<dt>PROFIILE_CLEAR</dt><dd>Clear all profile data. This will also cause the proc to return null.</dd>
-<dt>PROFIILE_AVERAGE</dt><dd>Any output data should use average times instead of total times.</dd>
+<dt>PROFILE_STOP</dt><dd>Stop profiling. Not using this flag will start/continue profiling.</dd>
+<dt>PROFILE_CLEAR</dt><dd>Clear all profile data. This will also cause the proc to return null.</dd>
+<dt>PROFILE_AVERAGE</dt><dd>Any output data should use average times instead of total times.</dd>
 </dl>
 
 <p>These additional values are also defined for convenience:
 
 <dl class=codedt>
-<dt>PROFIILE_START</dt><dd>Start/continue profiling but don't clear any existing data.</dd>
-<dt>PROFIILE_REFRESH</dt><dd>Currently this is the same as <tt>PROFILE_START</tt>.</dd>
-<dt>PROFIILE_RESTART</dt><dd>Start profiling and clear existing data.</dd>
+<dt>PROFILE_START</dt><dd>Start/continue profiling but don't clear any existing data.</dd>
+<dt>PROFILE_REFRESH</dt><dd>Currently this is the same as <tt>PROFILE_START</tt>.</dd>
+<dt>PROFILE_RESTART</dt><dd>Start profiling and clear existing data.</dd>
 </dl>
 
 <p>By default, data will be returned as a list. The first six values are the
@@ -25675,6 +25811,9 @@ areas in the mask become transparent, and vice-versa. There is also a
 <tt>MASK_SWAP</tt> flag which treats the source image as the mask and
 vice-versa, which might be useful for some effects.
 
+<p>Note: Unlike many other filters, this filter <b>is</b> taken into account
+for mouse-hit purposes.
+
 <hr>
 
 <a name=/{notes}/filters/angular_blur toc="Angular blur (filters)">
@@ -25894,6 +26033,9 @@ the other vars apply to the second image being drawn.
 <a class=code href=#/atom/var/appearance_flags>PIXEL_SCALE</a> is not
 available here.</p>
 
+<p>Note: Like most other filters, this filter is <b>not</b> taken into account
+for mouse-hit purposes. Any layered icons will be strictly visual.
+
 <hr>
 
 <a name=/{notes}/filters/motion_blur toc="Motion blur (filters)">
@@ -25935,12 +26077,20 @@ both specified by <tt>x</tt> and <tt>y</tt>. The size of the blur is equal to
 <dl><dt>Args:</dt>
 <dd>size: Width in pixels (defaults to 1)</dd>
 <dd>color: Outline color (defaults to black)</dd>
+<dd byondver=513>flags: Defaults to 0 (see below)</dd>
 </dl>
 
 <p>Applies an outline to this image.
 
 <p>At larger sizes, the outline is less accurate and will take more passes to
 produce. Performance and appearance are best at sizes close to 1 or less.
+
+<p><tt>flags</tt> can be a combination of the following values:
+<dl class=codedt>
+<dt>0</dt><dd>Ordinary outline</dd>
+<dt>OUTLINE_SHARP</dt><dd>Avoid antialiasing in the outline</dd>
+<dt>OUTLINE_SQUARE</dt><dd>Extend the outline sharply from corner pixels; for a box this will maintain a box shape without rounded corners</dd>
+</dl>
 
 <hr>
 
@@ -26023,9 +26173,9 @@ outside of the normal color range.
 <p><tt>flags</tt> can have the following values:
 <dl class=codedt>
 <dt>0</dt><dd>The rays are drawn alone, erasing the existing image (useful for some effects).</dd>
-<dt>FLAG_OVERLAY</dt><dd>The rays are overlaid on top of the existing image.</dd>
-<dt>FLAG_UNDERLAY</dt><dd>The rays are drawn underneath the existing image.</dd>
-<dt>FLAG_OVERLAY | FLAG_UNDERLAY</dt><dd>Default. For plane masters, this will use the <tt>FLAG_OVERLAY</tt> behavior and draw the rays over the plane, and for all other images it will default to <tt>FLAG_UNDERLAY</tt> to draw the rays beneath them.</dd>
+<dt>FILTER_OVERLAY</dt><dd>The rays are overlaid on top of the existing image.</dd>
+<dt>FILTER_UNDERLAY</dt><dd>The rays are drawn underneath the existing image.</dd>
+<dt>FILTER_OVERLAY | FILTER_UNDERLAY</dt><dd>Default. For plane masters, this will use the <tt>FILTER_OVERLAY</tt> behavior and draw the rays over the plane, and for all other images it will default to <tt>FILTER_UNDERLAY</tt> to draw the rays beneath them.</dd>
 </dl>
 
 <hr>
@@ -26048,7 +26198,7 @@ outside of the normal color range.
 <dd>repeat: Wave period, in pixels (defaults to 2)</dd>
 <dd>radius: Outer radius of ripple, in pixels (defaults to 0)</dd>
 <dd>falloff: How quickly ripples lose strength away from the outer edge (defaults to 1)</dd>
-<dd>flags: Defaults to 0; use <tt>WAVE_BOUND</tt> to keep distortion within the image</dd>
+<dd>flags: Defaults to 0; use <tt>WAVE_BOUNDED</tt> to keep distortion within the image</dd>
 </dl>
 
 <p>Applies a ripple distortion effect to this image.
@@ -26066,7 +26216,7 @@ where r' = (radius - distance) &divide; repeat.
 
 <p>Up to 10 ripples can be stacked together in a single pass of the filter, as
 long as they have the same <tt>repeat</tt>, <tt>falloff</tt>, and
-<tt>flags</tt> values. (See the wave filter for the <tt>WAVE_BOUND</tt> flag.)
+<tt>flags</tt> values. (See the wave filter for the <tt>WAVE_BOUNDED</tt> flag.)
 
 <hr>
 
@@ -26128,12 +26278,12 @@ direction.
 
 <p>The <tt>WAVE_SIDEWAYS</tt> flag will cause the distortion to be transverse
 (perpendicular) to the wave instead of in the same direction as the wave. The
-<tt>WAVE_BOUND</tt> flag limits the distortion to the confines of this image,
+<tt>WAVE_BOUNDED</tt> flag limits the distortion to the confines of this image,
 instead of lettings its pixels spill out a little further from the distortion
 (and likewise, transparent pixels spill inward).
 
 <p>Up to 10 waves can be stacked together in a single pass of the filter, as long as they
-have the same <tt>WAVE_BOUND</tt> flags.
+have the same <tt>WAVE_BOUNDED</tt> flags.
 
 <hr>
 
@@ -27349,6 +27499,8 @@ output apply here.
 <dd><a href=#/{skin}/param/is-password>is-password</a>
 <dd><a href=#/{skin}/param/multi-line>multi-line</a>
 <dd><a href=#/{skin}/param/no-command>no-command</a>
+<dd><a href=#/{skin}/param/on-blur>on-blur</a>
+<dd><a href=#/{skin}/param/on-focus>on-focus</a>
 <dd><a href=#/{skin}/param/text>text</a>
 </dl>
 
@@ -27484,7 +27636,7 @@ output apply here.
 <dd><a href=#/{skin}/param/current-tab>current-tab</a>
 <dd><a href=#/{skin}/param/multi-line>multi-line</a>
 <dd><a href=#/{skin}/param/on-tab>on-tab</a>
-<dd><a href=#/{skin}/param/tab-text-color>tabs</a>
+<dd><a href=#/{skin}/param/tabs>tabs</a>
 </dl>
 
 <hr>
@@ -27826,9 +27978,9 @@ separately if supported.
 
 <p>Anchors the control within the window or pane. If the anchor is not <tt>none</tt>, it is expressed as pecentages of the container's width and height. For example, an anchor of 100,100 means that the X and Y position are tied to the lower right of the container, and 50,0 is tied to the top center.
 
-<p>Setting only <tt>anchor1</tt> will control the position of the control but won't affect its size. Setting <tt>anchor2</tt> as well will allow you to stretch the control as the container's size changes.
+<p>Setting only <tt>anchor1</tt> will control the position of the control but won't affect its size.
 
-<p>Read-only once the control is created.</p>
+<p>Setting <tt>anchor2</tt> as well will allow you to stretch the control as the container's size changes. You can think of this <tt>anchor1</tt> controlling the top left corner, and <tt>anchor2</tt> the bottom right corner.
 
 <hr>
 
@@ -27856,6 +28008,25 @@ separately if supported.
 <p>The angle of the bar control's arc when its <a class=code href=#/{skin}/param/dir>dir</a> is <tt>clockwise</tt> or <tt>counterclockwise</tt>. Angles are measured clockwise from due north, so 0 is north, 90 is east, and so on.
 
 <tt>angle1</tt> is the beginning of the arc, and <tt>angle2</tt> is the end.
+
+<hr>
+
+<a name=/{skin}/param/auto-format>
+<h2 deprecated=1>auto-format parameter (skin)</h2>
+
+<dl><dt><b>Applies to:</b>
+<dd><a href=#/{skin}/control/browser>Browser</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>true/false
+</dl>
+
+<dl class=codedd><dt><b>Default value:</b>
+<dd>false (was once true in old versions)
+</dl>
+
+<p>When true, the browser control will inject conditional scripting into HTML documents to make them behave nicer in very old browsers. However, it is unlikely there are any systems left that need this.
 
 <hr>
 
@@ -29301,6 +29472,26 @@ var/list/extra_resources = list(\
 
 <hr>
 
+<a name=/{skin}/param/on-blur>
+<h2>on-blur parameter (skin)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{skin}/param/focus>focus parameter</a>
+<dd><a href=#/{skin}/param/on-focus>on-focus parameter</a>
+</dl>
+
+<dl><dt><b>Applies to:</b>
+<dd><a href=#/{skin}/control/input>Input</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>string
+</dl>
+
+<p><a href=#/{skin}/commands>Command</a>a> executed when the control loses focus.
+
+<hr>
+
 <a name=/{skin}/param/on-close>
 <h2>on-close parameter (skin)</h2>
 
@@ -29342,6 +29533,26 @@ var/list/extra_resources = list(\
 
 <hr>
 
+<a name=/{skin}/param/on-focus>
+<h2>on-focus parameter (skin)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{skin}/param/focus>focus parameter</a>
+<dd><a href=#/{skin}/param/on-blur>on-blur parameter</a>
+</dl>
+
+<dl><dt><b>Applies to:</b>
+<dd><a href=#/{skin}/control/input>Input</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>string
+</dl>
+
+<p><a href=#/{skin}/commands>Command</a>a> executed when the control gains focus.
+
+<hr>
+
 <a name=/{skin}/param/on-hide>
 <h2>on-hide parameter (skin)</h2>
 
@@ -29359,7 +29570,7 @@ var/list/extra_resources = list(\
 <dd>string
 </dl>
 
-<p><a href=#/{skin}/commands>Command</a>a> executed when this control is hidden by the game. Must be the default control for the game to show/hide it.
+<p><a href=#/{skin}/commands>Command</a>executed when this control is hidden by the game. Must be the default control for the game to show/hide it.
 
 <p>Currently not editable in Dream Maker.
 
@@ -30007,7 +30218,7 @@ var/list/extra_resources = list(\
 <dd><a href=#/{skin}/param/font-family>font-family parameter</a>
 <dd><a href=#/{skin}/param/font-size>font-size parameter</a>
 <dd><a href=#/{skin}/param/font-style>font-style parameter</a>
-<dd><a href=#/{skin}/param/tab-text-color>text-wrap parameter</a>
+<dd><a href=#/{skin}/param/text-wrap>text-wrap parameter</a>
 </dl>
 
 <dl><dt><b>Applies to:</b>
@@ -30404,20 +30615,20 @@ controls, but it may vary by the type of control.
 <tr><td>font-weight</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>font-size</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>text-decoration</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>Limited to <tt>underline</tt>, <tt>overline</tt>, <tt>line-through</tt>, <tt>blink</tt>, and <tt>none</tt>. Support for each of these may vary depending on where they are used.</td></tr>
-<tr><td>text-align</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td><tt>justify</tt> currently has no effect.</td></tr>
+<tr><td>text-align</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td><tt>justify</tt> is supported in output and maptext.</td></tr>
 <tr><td>vertical-align</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>Limited to <tt>top</tt>, <tt>middle</tt>, and <tt>bottom</tt>.</td></tr>
-<tr><td>text-indent</td><td>&#x2714;&#xfe0f;</td><td></td><td></td><td></td></tr>
-<tr><td>margin-left</td><td>&#x2714;&#xfe0f;</td><td></td><td>&#x2714;&#xfe0f;</td><td></td></tr>
-<tr><td>margin-right</td><td>&#x2714;&#xfe0f;</td><td></td><td>&#x2714;&#xfe0f;</td><td></td></tr>
+<tr><td>text-indent</td><td>&#x2714;&#xfe0f;</td><td byondver=513>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
+<tr><td>margin-left</td><td>&#x2714;&#xfe0f;</td><td byondver=513>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
+<tr><td>margin-right</td><td>&#x2714;&#xfe0f;</td><td byondver=513>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>margin-top</td><td></td><td></td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>margin-bottom</td><td></td><td></td><td>&#x2714;&#xfe0f;</td><td></td></tr>
-<tr><td>margin</td><td>&#x2714;&#xfe0f;</td><td></td><td>&#x2714;&#xfe0f;</td><td></td></tr>
+<tr><td>margin</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>width</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td>Applies only to some elements such as images.</td></tr>
 <tr><td>height</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td>Applies only to some elements such as images.</td></tr>
-<tr><td>line-height</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td>Support in output control is limited; line heights less than 1 are not respected.</td></tr>
-<tr><td>white-space</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
-<tr><td>text-shadow</td><td></td><td>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
-<tr><td>-dm-text-outline</td><td></td><td>&#x2714;&#xfe0f;</td><td></td><td>Custom attribute: Adds an outline to text. Values are in the form: <tt><i>width color</i></tt>.</td></tr>
+<tr><td byondver=512>line-height</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td>Support in output control is limited; line heights less than 1 are not respected.<br/>Only unitless numbers, percentages, or em units are allowed.</td></tr>
+<tr><td>white-space</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td><td><tt>normal</tt>, <tt>nowrap</tt>, <tt>pre</tt>, <tt>pre-wrap</tt>, <tt>pre-line</tt></td></tr>
+<tr><td byondver=512>text-shadow</td><td></td><td>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
+<tr><td byondver=512>-dm-text-outline</td><td></td><td>&#x2714;&#xfe0f;</td><td></td><td>Custom attribute: Adds an outline to text. Values are in the form: <tt><i>width color style</i></tt>.<br>The style is either blank, or any combination of the <tt>sharp</tt> and <tt>square</tt> keywords (see <a href=#/{notes}/filters/outline>Outline filter</a>).</td></tr>
 </table>
 
 <p>These pseudo-classes are allowed in some contexts, but they can only change
@@ -30426,10 +30637,10 @@ the text color.
 <table class="withborder codefirst">
 <colgroup><col /><col span=3 class=center /><col /></colgroup>
 <tr><th>Psuedo-class</th><th>Output</th><th>Maptext</th><th>Other</th><th>Notes</th></tr>
-<tr><td>:link</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
+<tr><td>:link</td><td>&#x2714;&#xfe0f;</td><td byondver=512>&#x2714;&#xfe0f;</td><td>&#x2714;&#xfe0f;</td><td></td></tr>
 <tr><td>:visited</td><td>&#x2714;&#xfe0f;</td><td></td><td></td><td></td></tr>
 <tr><td>:active</td><td></td><td></td><td></td><td>Currently not used, but future support is planned.</td></tr>
-<tr><td>:hover</td><td></td><td>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
+<tr><td>:hover</td><td></td><td byondver=512>&#x2714;&#xfe0f;</td><td></td><td></td></tr>
 </table>
 
 <hr>
