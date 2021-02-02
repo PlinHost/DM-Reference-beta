@@ -160,7 +160,7 @@
     }
     var filters_in_use = [];
     function toggleFilter(group) {
-      var active=true,mi=document.querySelector(`#filter_menu li[group="${group}"]`);
+      var active=true,mi=document.querySelector('#filter_menu li[group="'+group+'"]');
       var i = filters_in_use.indexOf(group);
       if(i>=0) {filters_in_use.splice(i,1); active=false;}
       else filters_in_use.push(group);
@@ -187,7 +187,7 @@
 
       for(j=filters_in_use.length; j--;) {
         group = filters_in_use[j];
-        a = page.querySelectorAll(`a[group="${group}"],a[group^="${group},"],a[group^="${group}."],a[group$=",${group}"],a[group~=",${group},"],a[group~=",${group}."]`);
+        a = page.querySelectorAll('a[group="'+group+'"],a[group^="'+group+',"],a[group^="'+group+'."],a[group$=",'+group+'"],a[group~=",'+group+',"],a[group~=",'+group+'."]');
         for(i=0,l=a.length; i<l; ++i) {
           a[i].parentNode.classList.add('filter');
         }
@@ -426,6 +426,7 @@
         <dt><a href=info.html#/atom/movable/var/bound_height>bound_height</a>
         <dt><a href=info.html#/atom/movable/var/locs>locs</a>
         <dt><a href=info.html#/atom/movable/var/glide_size group="effect">glide_size</a>
+        <dt><a href=info.html#/atom/movable/var/particles group="effect">particles</a>
         <dt><a href=info.html#/atom/movable/var/screen_loc group="effect">screen_loc</a>
         <dt><a href=info.html#/atom/movable/var/step_size>step_size</a>
         <dt><a href=info.html#/atom/movable/var/step_x>step_x</a>
@@ -598,6 +599,7 @@
       <dt><a href=info.html#/client/var/statobj group="!output">statobj</a>
       <dt><a href=info.html#/client/var/statpanel group="output">statpanel</a>
       <dt><a href=info.html#/client/var/tick_lag group="time">tick_lag</a>
+      <dt><a href=info.html#/client/var/timezone group="time">timezone</a>
       <dt><a href=info.html#/client/var/verbs>verbs</a>
       <dt><a href=info.html#/client/var/view group="map">view</a>
       <dt><a href=info.html#/client/var/virtual_eye group="map">virtual_eye</a>
@@ -694,6 +696,7 @@
       <dt><a href=info.html#/list/proc/Insert>Insert</a>
       <dt><a href=info.html#/list/proc/Join group="text">Join</a>
       <dt><a href=info.html#/list/proc/Remove>Remove</a>
+      <dt><a href=info.html#/list/proc/Splice>Splice</a>
       <dt><a href=info.html#/list/proc/Swap>Swap</a>
     </dl></dd>
     <dt><a href=info.html#/list/var>var</a>
@@ -758,6 +761,7 @@
     <dt><a href=info.html#/operator/%= group="math">%=</a>
     <dt><a href=info.html#/operator/& group="math,list">&</a>
     <dt><a href=info.html#/operator/&& group="flow">&&</a>
+    <dt><a href=info.html#/operator/&&= group="flow">&&</a>
     <dt><a href=info.html#/operator/&= group="math,list">&=</a>
     <dt><a href=info.html#/operator/%3e group="math">&gt;</a>
     <dt><a href=info.html#/operator/%3e%3e>&gt;&gt;</a>
@@ -789,12 +793,14 @@
     <dt><a href=info.html#/operator// group="math">/</a>
     <dt><a href=info.html#/operator//= group="math">/=</a>
     <dt><a href=info.html#/operator/: group="object">:</a>
+    <dt><a href=info.html#/operator/:= group="object">:</a>
     <dt><a href=info.html#/operator/= group="math,object">=</a>
     <dt><a href=info.html#/operator/== group="math,object">==</a>
     <dt><a href=info.html#/operator/%2e group="object">.</a>
     <dt><a href=info.html#/operator/%3f group="flow">?</a>
     <dt><a href=info.html#/operator/%3f%2e group="object,flow">?.</a>
     <dt><a href=info.html#/operator/%3f: group="object,flow">?:</a>
+    <dt><a href=info.html#/operator/%3f[] group="list,flow">?[]</a>
     <dt><a href=info.html#/operator/[] group="list">[]</a>
     <dt><a href=info.html#/operator/^ group="math,list">^</a>
     <dt><a href=info.html#/operator/^= group="math,list">^=</a>
@@ -808,6 +814,7 @@
     <dt><a href=info.html#/operator/| group="math,list">|</a>
     <dt><a href=info.html#/operator/|= group="math,list">|=</a>
     <dt><a href=info.html#/operator/|| group="flow">||</a>
+    <dt><a href=info.html#/operator/||= group="flow">&&</a>
     <dt><a href=info.html#/operator/~ group="math">~</a>
     <dt><a href=info.html#/operator/~= group="math,object">~=</a>
     <dt><a href=info.html#/operator/~! group="math,object">~!</a>
@@ -870,6 +877,7 @@
       <dt><a href=info.html#/proc/for/loop>loop</a>
     </dl></dd>
     <dt><a href=info.html#/proc/ftp group="file,output">ftp</a>
+    <dt><a href=info.html#/proc/generator group="random">generator</a>
     <dt><a href=info.html#/proc/get_dir group="map">get_dir</a>
     <dt><a href=info.html#/proc/get_dist group="map">get_dist</a>
     <dt><a href=info.html#/proc/get_step group="map">get_step</a>
@@ -878,6 +886,7 @@
     <dt><a href=info.html#/proc/get_step_to group="map">get_step_to</a>
     <dt><a href=info.html#/proc/get_step_towards group="map">get_step_towards</a>
     <dt><a href=info.html#/proc/goto group="flow">goto</a>
+    <dt><a href=info.html#/proc/gradient group="convert,effect">gradient</a>
     <dt><a href=info.html#/proc/hascall group="object">hascall</a>
     <dt><a href=info.html#/proc/hearers group="map">hearers</a>
     <dt><a href=info.html#/proc/html_decode group="text,convert">html_decode</a>
@@ -911,6 +920,7 @@
     <dt><a href=info.html#/proc/link group="output">link</a>
     <dt><a href=info.html#/proc/list group="list">list</a>
     <dt><a href=info.html#/proc/list2params group="text,list,convert">list2params</a>
+    <dt><a href=info.html#/proc/load_resource group="client,icon,sound">load_resource</a>
     <dt><a href=info.html#/proc/locate group="type,map">locate</a>
     <dt><a href=info.html#/proc/log group="math">log</a>
     <dt><a href=info.html#/proc/lowertext group="text">lowertext</a>
@@ -941,6 +951,7 @@
     <dt><a href=info.html#/proc/replacetextEx group="text">replacetextEx</a>
     <dt><a href=info.html#/proc/return group="flow">return</a>
     <dt><a href=info.html#/proc/rgb group="text,effect,convert">rgb</a>
+    <dt><a href=info.html#/proc/rgb2num group="text,effect,convert">rgb2num</a>
     <dt><a href=info.html#/proc/roll group="random">roll</a>
     <dt><a href=info.html#/proc/round group="math">round</a>
     <dt><a href=info.html#/proc/run group="output">run</a>
@@ -959,6 +970,7 @@
     <dt><a href=info.html#/proc/sound group="sound">sound</a>
     <dt><a href=info.html#/proc/spantext group="text">spantext</a>
     <dt><a href=info.html#/proc/spawn group="flow">spawn</a>
+    <dt><a href=info.html#/proc/splicetext group="text,list">splicetext</a>
     <dt><a href=info.html#/proc/splittext group="text,list">splittext</a>
     <dt><a href=info.html#/proc/sqrt group="math">sqrt</a>
     <dt><a href=info.html#/proc/startup group="server">startup</a>
@@ -1160,11 +1172,13 @@
       <dt><a href=info.html#/world/var/internet_address>internet_address</a>
       <dt><a href=info.html#/world/var/log group="file">log</a>
       <dt><a href=info.html#/world/var/loop_checks>loop_checks</a>
+      <dt><a href=info.html#/world/var/map_cpu>map_cpu</a>
       <dt><a href=info.html#/world/var/map_format group="!map,effect">map_format</a>
       <dt><a href=info.html#/world/var/maxx group="!map">maxx</a>
       <dt><a href=info.html#/world/var/maxy group="!map">maxy</a>
       <dt><a href=info.html#/world/var/maxz group="!map">maxz</a>
       <dt><a href=info.html#/world/var/mob group="!map,type">mob</a>
+      <dt><a href=info.html#/world/var/movement_mode group="!map">movement_mode</a>
       <dt><a href=info.html#/world/var/name group="hub">name</a>
       <dt><a href=info.html#/world/var/params>params</a>
       <dt><a href=info.html#/world/var/port>port</a>
@@ -1177,6 +1191,7 @@
       <dt><a href=info.html#/world/var/tick_usage group="time">tick_usage</a>
       <dt><a href=info.html#/world/var/time group="time">time</a>
       <dt><a href=info.html#/world/var/timeofday group="time">timeofday</a>
+      <dt><a href=info.html#/world/var/timezone group="time">timezone</a>
       <dt><a href=info.html#/world/var/turf group="!map,type">turf</a>
       <dt><a href=info.html#/world/var/url>url</a>
       <dt><a href=info.html#/world/var/version>version</a>
@@ -1188,12 +1203,14 @@
   <dd><dl>
     <dt><a href=info.html#/{notes}/BACKGROUND_LAYER group="effect">BACKGROUND_LAYER</a>
     <dt><a href=info.html#/{notes}/big-icons group="map">Big icons</a>
+    <dt><a href=info.html#/{notes}/color-gradient group="effect">Color gradient</a>
     <dt><a href=info.html#/{notes}/color-matrix group="effect">Color matrix</a>
     <dt><a href=info.html#/{notes}/EFFECTS_LAYER group="effect">EFFECTS_LAYER</a>
     <dt><a href=info.html#/{notes}/filters group="effect">Filter effects</a>
     <dd><dl>
       <dt><a href=info.html#/{notes}/filters/alpha>Alpha mask</a>
       <dt><a href=info.html#/{notes}/filters/angular_blur>Angular blur</a>
+      <dt><a href=info.html#/{notes}/filters/bloom>Bloom</a>
       <dt><a href=info.html#/{notes}/filters/color>Color matrix</a>
       <dt><a href=info.html#/{notes}/filters/displace>Displacement map</a>
       <dt><a href=info.html#/{notes}/filters/drop_shadow>Drop shadow</a>
@@ -1206,11 +1223,14 @@
       <dt><a href=info.html#/{notes}/filters/ripple>Ripple</a>
       <dt><a href=info.html#/{notes}/filters/wave>Wave</a>
     </dl></dd>
+    <dt><a href=info.html#/{notes}/generators group="random">Generators</a>
     <dt><a href=info.html#/{notes}/gliding group="effect">Gliding</a>
     <dt><a href=info.html#/{notes}/HUD group="effect">HUD / screen objects</a>
     <dt><a href=info.html#/{notes}/isometric group="map">Isometric maps</a>
     <dt><a href=info.html#/{notes}/numbers group="lang,math">Numbers</a>
+    <dt><a href=info.html#/{notes}/particles group="effect">Particle effects</a>
     <dt><a href=info.html#/{notes}/pixel-movement group="map">Pixel movement</a>
+    <dt><a href=info.html#/{notes}/projection-matrix>Projection matrix</a>
     <dt><a href=info.html#/{notes}/regex group="text">Regular expressions</a>
     <dt><a href=info.html#/{notes}/side group="map">Side-view maps</a>
     <dt><a href=info.html#/{notes}/tiled-icons group="map">Tiled icons</a>
@@ -1358,6 +1378,8 @@
   <dd><dl>
     <dt><a href=info.html#/{{appendix}}/css group="text,map,output">CSS attributes</a>
     <dt><a href=info.html#/{{appendix}}/html-colors group="text,map,output">HTML colors</a>
+    <dt><a href=info.html#/{{appendix}}/color-space group="effect">Color space</a>
+    <dt><a href=info.html#/{{appendix}}/stddef.dm group="lang">stddef.dm file</a>
   </dl></dd>
 </dl>
 </div>

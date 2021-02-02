@@ -31,7 +31,7 @@
   .nav li {padding: 0 0 0 5px; list-style: none; display: inline-block; position: relative; height: 2em; margin: 0 0.5em; background: #ddf; vertical-align: top;}
   .nav li:first-child {padding-left: 10px; margin-left: 0;}
   .nav li:last-child {font-weight: bold;}
-  .nav a {color: black; text-decoration: none; height: 2em; line-height: 34px; display: block;}
+  .nav a {color: black; text-decoration: none; height: 2em; line-height: 34px; display: inline-block;}
   body.refpage .nav a {line-height: 30px;}
   .nav li:before, .nav li:after {content: ""; position: absolute; top: 0; width: 0; height: 0;}
   .nav li:not(:first-child):before {right: 100%; border: 1em solid #ddf; border-left-color: transparent; border-right-width: 0;}
@@ -39,6 +39,7 @@
   .nav li:hover {background: #99f;}
   .nav li:hover:not(:first-child):before {right: 100%; border: 1em solid #99f; border-left-color: transparent; border-right-width: 0;}
   .nav li:hover:after {left: 100%; border: 1em solid transparent; border-left-color: #99f; border-right-width: 0;}
+  body:not(.refpage) .nav li:first-child:before {width: 32px; height: 32px; background: url("reference.png"); background-repeat: no-repeat; background-position 50% 50%; background-size: 32px; display: inline-block; vertical-align: middle; position: relative; top: auto; margin: 0 5px 0 -5px;}
   /* Headers */
 	H1, H2 {text-align: left; padding: 0; margin: 0; clear: both;}
 	H3 {font-size: 1.166667em; font-weight:bold; margin: 1em 0; clear: both;}
@@ -57,7 +58,7 @@
   td.center, th.center {text-align: center;}
 	th {border-bottom: 1px solid #555;}
 	table.regex td:not(:last-child), table.overload td:not(:last-child), table.codefirst td:first-child {white-space: nowrap; font-family: 'Lucida Console','Droid Sans Mono','Bistream Vera Sans Mono',monospace; padding-right: 1em;}
-  table.regex th:not(:last-child), table.overload th:not(:last-child) {padding-right: 1em;}
+  table.regex th:not(:last-child), table.overload th:not(:last-child), table.codefirst tr > *:not(:last-child) {padding-right: 1em;}
 	table.regex td:not(:last-child) i, table.codefirst td:first-child i, pre i, .code * i, .codedd * i {font-family: 'Segoe UI',Verdana,Arial,Helvetica,sans-serif;}
   table.withborder {box-shadow: 0 0 5px #ccc;}
   table.withborder td, table.withborder th {padding:3px; border: 1px solid #555;}
@@ -1048,13 +1049,14 @@ not prevent the project from compiling.
 <dd><a href=#/DM/cache>cache</a>
 <dd><a href=#/proc/sound>sound proc</a>
 <dd><a href=#/sound>/sound datum</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 </dl>
 
 <p>A sound stored in a file may be referenced by putting single quotes around
 the filename.  The file extension determines the type of sound.  Currently
 supported music types include MIDI (.mid or .midi), and module formats .mod, .it,
-.s3m, .xm, and .oxm. Supported sound effect formats include .wav, .ogg, .raw,
-.wma, and .aiff.*
+.s3m, .xm, and .oxm. Supported sound effect formats include .wav, .ogg, .mp3,
+.raw, .wma, and .aiff.
 
 <h3>Example:</h3>
 <xmp>
@@ -1062,11 +1064,6 @@ world << sound('fugue.midi')
 </xmp>
 
 <p>This example plays the specified midi file to all players.
-
-<h3>Notes</h3>
-<p><small>*The MP3 format is not presently supported by BYOND due to licensing
-issues. Ogg-Vorbis, however, is a good alternative. For music the module
-formats are also a good choice, and tend to be smaller.</small>
 
 <hr>
 
@@ -1521,7 +1518,7 @@ by a colon, followed by the value of the attribute.  The following table
 summarizes the recognized attributes and their possible values.
 
 <table class="withborder">
-<tr><td>color</td>           <td rowspan=2>#F00, #FF000, red, rgb(255,0,0), rgb(100%,0%,0%)</td>
+<tr><td>color</td>           <td rowspan=2>#F00, #FF0000, red, rgb(255,0,0), rgb(100%,0%,0%)</td>
 <tr><td>background</td>
 <tr><td>font-size</td>       <td>10pt, 1.5em, 150%</td>
 <tr><td>font-style</td>      <td>normal or italic</td>
@@ -2091,6 +2088,7 @@ movement, to preserve the behavior of older games.
 <dd><a href=#/atom/proc/Uncrossed>Uncrossed proc (atom)</a>
 <dd><a href=#/atom/movable/proc/Move>Move proc (movable atom)</a>
 <dd><a href=#/mob/var/group>group var (mob)</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
 <dd><a href=#/{notes}/pixel-movement>Pixel movement</a>
 </dl>
 
@@ -2114,6 +2112,11 @@ movement, to preserve the behavior of older games.
 <dd>Allow overlap unless both atoms are dense. If both atoms are mobs, the
 behavior depends partly on whether they are in the same group.
 </dl>
+
+<p class=note>The following behavior only applies to
+<a class=code href=#/world/var/movement_mode>LEGACY_MOVEMENT_MODE</a>. In
+other movement modes, src.Cross(O) returns 0 by default if src and O are both
+mobs in the same group.
 
 <p>If src completely covers the turf it is standing on, Cross() is called as
 part of turf.Enter(). This is to preserve the behavior of older games, which
@@ -2222,15 +2225,15 @@ it can be stopped partway. A jump is pass/fail. See more information below.
 
 <p>This is what happens by default:
 
-<ol><li><p>oldloc.Exit(src) is called for any turfs or areas being vacated, or the
-container if moving out of an obj or mob. neighbor.Uncross(src) is called for
-any movable atoms that will no longer be overlapping this object. If any of these
+<ol><li><p>oldloc.Exit(src) is called for any turfs or areas being vacated, or
+the container if moving out of an obj or mob. neighbor.Uncross(src) is called
+for any atoms that will no longer be overlapping this object. If any of these
 return 0 (failure), movement fails.</li>
 <li><p>newloc.Enter(src) is called for any turfs or areas that may be entered
 for the first time, or the container if moving into an obj or mob.
-neighbor.Cross(src) is called for any movable atoms that may be in collision
-with this object if the move fully succeeds. If any of these return 0
-(failure), then a slide can be cut short but a jump will fail completely.</li>
+neighbor.Cross(src) is called for any atoms that may be in collision with this
+object if the move fully succeeds. If any of these return 0 (failure), then a
+slide can be cut short but a jump will fail completely.</li>
 <li><p>If any obstacles were encountered via Enter() or Cross() failing, then
 src.Bump(obstacle) will be called for each of them.</li>
 <li><p>If movement did not fail completely, then loc and step_x/y, will be
@@ -2348,6 +2351,7 @@ obj/pressure_plate
 <dd><a href=#/atom/movable/var/locs>locs</a>
 <dd><a href=#/atom/movable/var/screen_loc>screen_loc</a>
 <dd><a href=#/atom/movable/var/glide_size>glide_size</a>
+<dd><a href=#/atom/movable/var/particles>particles</a>
 <dd><a href=#/atom/movable/var/step_size>step_size</a>
 <dd><a href=#/atom/movable/var/step_x>step_x</a>
 <dd><a href=#/atom/movable/var/step_y>step_y</a>
@@ -2589,6 +2593,26 @@ list.
 
 <p>If loc is not a turf, it will be the only item in the locs list. If loc
 is null, locs will be empty.
+
+<hr>
+
+<a name=/atom/movable/var/particles>
+<h2 byondver=514>particles var (movable atom)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+</dl>
+
+<dl><dt><b>Default value:</b>
+<dd>null
+</dl>
+
+<p>A datum (not derived from /atom) containing information about a particle
+set attached to this atom. See <a href=#/{notes}/particles>Particle
+effects</a> for more information.
+
+<p>Resetting this var to null after it has contained a particle set will
+cause any existing particles on this object to immiediately disappear.
 
 <hr>
 
@@ -2966,6 +2990,7 @@ turf/DblClick()
 <dd><a href=#/atom/proc/Uncross>Uncross proc (atom)</a>
 <dd><a href=#/atom/proc/Uncrossed>Uncrossed proc (atom)</a>
 <dd><a href=#/atom/movable/proc/Move>Move proc (movable atom)</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
 <dd><a href=#/{notes}/pixel-movement>Pixel movement</a>
 </dl>
 
@@ -2991,6 +3016,11 @@ turf/DblClick()
 </dl>
 
 <p>Areas, objs, and mobs will always permit anything to enter by default.
+
+<p class=note>The following behavior only applies to
+<a class=code href=#/world/var/movement_mode>LEGACY_MOVEMENT_MODE</a>. In all
+other movement modes, the turf's contents are not taken into account. Only the
+result of turf.Cross() matters.
 
 <p>Turfs will return 1 (permit) or 0 (deny) based on density. In simple
 terms, if the atom that is entering is dense, then the turf will deny entry
@@ -3117,6 +3147,7 @@ mob/verb/wish()
 <dd><a href=#/atom/proc/Uncross>Uncross proc (atom)</a>
 <dd><a href=#/atom/proc/Uncrossed>Uncrossed proc (atom)</a>
 <dd><a href=#/atom/movable/proc/Move>Move proc (movable atom)</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -3142,6 +3173,11 @@ mob/verb/wish()
 
 <p>By default, every atom returns 1 to allow exit, except for turfs which
 call Uncross() to handle it for them.
+
+<p class=note>The following behavior only applies to
+<a class=code href=#/world/var/movement_mode>LEGACY_MOVEMENT_MODE</a>. In all
+other movement modes, the turf's contents are not taken into account. Only the
+result of turf.Uncross() matters.
 
 <p>In the default Exit handler for turfs, Uncross() is called for the turf
 itself and then Uncross() will also be called for any atoms in turf.contents
@@ -3790,6 +3826,7 @@ will be copied.
 <dd><a href=#/atom/var/transform>transform var (atom)</a>
 <dd><a href=#/client/var/color>color var (client)</a>
 <dd><a href=#/{notes}/gliding>Gliding</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -3809,6 +3846,7 @@ will be copied.
 <dd byondver=510><b>TILE_BOUND</b>: Avoids more accurate visibility calculations
 <dd byondver=511><b>PIXEL_SCALE</b>: Use point sampling when transforming this icon
 <dd byondver=513><b>PASS_MOUSE</b>: If this icon has a <tt>render_source</tt>, pass mouse any hits to the render source
+<dd byondver=514><b>TILE_MOVER</b>: This atom is always locked to the grid
 </dl>
 
 <p>The appearance_flags value controls miscellaneous behavior of an atom or
@@ -3921,6 +3959,13 @@ appearance of another object (source). This is just a visual copy, so the
 mouse still interacts with this object, not the source. The <tt>PASS_MOUSE</tt>
 flag causes any mouse interaction to happen with the source instead of this
 object.
+
+<h3 byondver=514>TILE_MOVER</h3>
+
+<p>This flag indicates this atom is locked to the tile grid as it would be in
+<a class=code href=#/world/var/movement_mode>TILE_MOVEMENT_MODE</a>,
+regardless of the setting of <tt>world.movement_mode</tt>. In this way, pixel
+movers and tile movers can coexist.
 
 <hr>
 
@@ -4106,6 +4151,7 @@ mob/verb/look(atom/O in view())
 <dd><a href=#/atom/movable/proc/Move>Move proc (movable atom)</a>
 <dd><a href=#/atom/var/icon>icon var (atom)</a>
 <dd><a href=#/proc/turn>turn proc</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -4204,6 +4250,7 @@ PLURAL
 <dd><a href=#/DM/icon>icons</a>
 <dd><a href=#/atom/var/overlays>overlays var (atom)</a>
 <dd><a href=#/atom/var/underlays>underlays var (atom)</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 </dl>
 
 <dl><dt><b>Default value:</b>
@@ -5320,7 +5367,7 @@ mob/verb/remove_kazaam()
 
 <p>Turfs, movable atoms, and images can be given a list of atoms (limited to
 turfs and movable atoms) that are attached to them visually, like an overlay
-or image object, but act indepnendently and have their own identity. These are
+or image object, but act independently and have their own identity. These are
 <b>visual contents</b>. The purpose of visual contents is to provide an
 alternative system to overlays and images, with a little more flexibility for
 various special effects.
@@ -6928,6 +6975,7 @@ or whatever).
 <dd><a href=#/client/var/statobj>statobj</a>
 <dd><a href=#/client/var/statpanel>statpanel</a>
 <dd><a href=#/client/var/tick_lag>tick_lag</a>
+<dd><a href=#/client/var/timezone>timezone</a>
 <dd><a href=#/client/var/verbs>verbs</a>
 <dd><a href=#/client/var/view>view</a>
 <dd><a href=#/client/var/virtual_eye>virtual_eye</a>
@@ -8223,6 +8271,21 @@ on the server.
 
 <hr>
 
+<a name=/client/var/timezone>
+<h2 byondver=514>timezone var (client)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/world/var/realtime>realtime var (world)</a>
+<dd><a href=#/world/var/timeofday>timeofday var (world)</a>
+<dd><a href=#/world/var/timezone>timezone var (world)</a>
+<dd><a href=#/proc/time2text>time2text proc</a>
+</dl>
+
+<p>This is the time offset from UTC, in hours, for the client's time zone. It
+can be used in the <tt>time2text()</tt> proc.
+
+<hr>
+
 <a name=/client/var/verbs>
 <h2>verbs list var (client)</h2>
 
@@ -8306,6 +8369,7 @@ may instead be a turf, or null, when the eye is off-center.
 <dl><dt><b>See also:</b>
 <dd><a href=#/database/query>database query datum</a>
 <dd><a href=#/database/proc>procs (database)</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>A /database datum gives you the ability to create or access a database
@@ -8454,6 +8518,7 @@ closed automatically. It is more common to simply open the database in New().
 <dl><dt><b>See also:</b>
 <dd><a href=#/database>database datum</a>
 <dd><a href=#/database/query/proc>procs (database query)</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>This datum lets you create a query for a database, which can be run with
@@ -9238,7 +9303,8 @@ mob/verb/dump()
 <dd><a href=#/proc/try>try and catch keywords</a>
 <dd><a href=#/world/proc/Error>Error proc (world)</a>
 <dd><a href=#/proc/throw>throw keyword</a>
-<dd><a href=#/proc/EXCEPTION>EXCEPTION macro</a>
+<dd><a href=#/proc/EXCEPTION>EXCEPTION proc</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <dl><dt><b>Vars:</b>
@@ -9273,6 +9339,7 @@ want to use something other than world.log.
 <dd><a href=#/icon/proc>procs (icon)</a>
 <dd><a href=#/DM/icon>icons</a>
 <dd><a href=#/image>image objects</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>An <tt>/icon</tt> object is created by loading an icon file into memory for
@@ -10240,21 +10307,28 @@ var/list/lst = list(player = "James Byond", score = 2000)
 <a name=/list/operators>
 <h2 short="operators">list operators</h2>
 
-<dl><dt><b>See also:</b>
+<p>These operators are used for accessing list items.
+
+<dl>
+<dd><a href=#/operator/[]>[] operator</a>
+<dd><a href=#/operator/%3F[]>?[] operator</a>
+</dl>
+
+<p>These operators all have special meaning when applied to lists.
+
+<dl>
 <dd><a href=#/operator/+>+ operator</a>
 <dd><a href=#/operator/+=>+= operator</a>
 <dd><a href=#/operator/->- operator</a>
 <dd><a href=#/operator/-=>-= operator</a>
 <dd><a href=#/operator/|>| operator</a>
 <dd><a href=#/operator/|=>|= operator</a>
-<dd><a href=#/operator/&>& operator</a>
-<dd><a href=#/operator/&=>&= operator</a>
+<dd><a href=#/operator/&>&amp; operator</a>
+<dd><a href=#/operator/&=>&amp;= operator</a>
 <dd><a href=#/operator/^>^ operator</a>
 <dd><a href=#/operator/^=>^= operator</a>
 <dd><a href=#/operator/in>in operator</a>
 </dl>
-
-<p>The operators listed above have special meaning when applied to lists.
 
 <hr>
 
@@ -10276,6 +10350,7 @@ var/list/lst = list(player = "James Byond", score = 2000)
 <dd><a href=#/list/proc/Insert>Insert</a>
 <dd><a href=#/list/proc/Join>Join</a>
 <dd><a href=#/list/proc/Remove>Remove</a>
+<dd><a href=#/list/proc/Splice>Splice</a>
 <dd><a href=#/list/proc/Swap>Swap</a>
 </dl>
 
@@ -10406,8 +10481,11 @@ searched.
 <p>Insert values into a list at a specific point. Using Index=0 or
 Index=list.len+1 is the same as adding to the list.
 
+<p>If any of the items you insert is itself a list, its elements will be
+inserted instead of the list itself.
+
 <p>Note: This proc doesn't work with many special lists such as
-<code>contents</code>.
+<code>contents</code> or <code>overlays</code>.
 
 <hr>
 
@@ -10464,6 +10542,56 @@ Add().
 
 <hr>
 
+<a name=/list/proc/Splice>
+<h2 byondver=514>Splice proc (list)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/list/proc/Copy>Copy proc (list)</a>
+<dd><a href=#/list/proc/Cut>Cut proc (list)</a>
+<dd><a href=#/list/proc/Insert>Insert proc (list)</a>
+<dd><a href=#/proc/splicetext>splicetext proc</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>list.Splice(Start=1,End=0,Item1,Item2...)
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>Start: The list index where the splice will begin.
+<dd>End: The index immediately following the last item to be cut from the list. 0 is the end of the list.
+<dd>Item1, Item2...: Items to be inserted.
+</dl>
+
+<p>Cuts out items from a list, and inserts new items in their place.
+This is basically equivalent to calling <tt>list.Cut(Start,End)</tt> and then
+calling <tt>list.Insert(Start,Item1,Item2...)</tt>, but faster.
+
+<h3>Example:</h3>
+<xmp>
+var/list/L = list("apple","banana","orange","pear")
+
+// cuts "banana" and "orange" and inserts four new items
+L.Splice(2,4,"firetruck","camel","joystick","balloon")
+
+// prints apple, firetruck, camel, joystick, balloon, pear
+for(var/item in L)
+    usr << item
+</xmp>
+
+<p>As with <tt>Insert()</tt>, any items that are lists will insert their
+contents instead of themselves.
+
+<p>The <tt>Start</tt> and <tt>End</tt> index values can be negative, which
+count backwards from the end of the list. If the index values are out of
+range, there will be no error; they will simply be clamped to the beginning
+or end of the list. If <tt>End</tt> comes before <tt>Start</tt>, the two
+values are swapped.
+
+<p>Note: This proc doesn't work with many special lists such as
+<code>contents</code> or <code>overlays</code>.
+
+<hr>
+
 <a name=/list/proc/Swap>
 <h2>Swap proc (list)</h2>
 
@@ -10511,7 +10639,7 @@ orange -> 3
 </xmp>
 
 <p>Note: This proc doesn't work with many special lists such as
-<code>contents</code>.
+<code>contents</code> or <code>overlays</code>.
 
 <hr>
 
@@ -10578,14 +10706,15 @@ determined by the world variables turf and area.
 <h2 byondver=500>matrix</h2>
 
 <dl><dt><b>See also:</b>
+<dd><a href=#/proc/matrix>matrix proc</a>
 <dd><a href=#/matrix/operators>matrix operators</a>
 <dd><a href=#/matrix/proc>matrix procs</a>
 <dd><a href=#/atom/var/transform>transform var (atom)</a>
-<dd><a href=#/proc/matrix>matrix proc</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>To display rotation, scaling, and other transformations on atoms, DM uses
-matrices. The /matrix datum is a convenient way of handling the numbers
+2D matrices. The /matrix datum is a convenient way of handling the numbers
 involved, as it can be easily manipulated. There are six vars, a through f,
 laid out like so:
 
@@ -11578,8 +11707,8 @@ obj
 
 <pre class=dmcode>
 <a href="#/operator/()">()</a> <a href="#/operator/path/%2e">.</a> <a href="#/operator/path/:">:</a> <a href="#/operator/path//">/</a>        <span class=DMc>// here . : / are path operators</span>
-<a href="#/operator/[]">[]</a>
-<a href="#/operator/%2e">.</a> <a href="#/operator/:">:</a> <a href="#/operator/%3f%2e">?.</a> <a href="#/operator/%3f:">:</a>
+<a href="#/operator/[]">[]</a> <a href="#/operator/%3f[]">?[]</a>
+<a href="#/operator/%2e">.</a> <a href="#/operator/:">:</a> <a href="#/operator/%3f%2e">?.</a> <a href="#/operator/%3f:">?:</a>
 <a href="#/operator/~">~</a> <a href="#/operator/!">!</a> <a href="#/operator/-">-</a> <a href="#/operator/++">++</a> <a href="#/operator/--">--</a>     <span class=DMc>// unary operators</span>
 <a href="#/operator/**">**</a>
 <a href="#/operator/*">*</a> <a href="#/operator//">/</a> <a href="#/operator/%">%</a>
@@ -11593,7 +11722,7 @@ obj
 <a href="#/operator/&&">&amp;&amp;</a>
 <a href="#/operator/||">||</a>
 <a href="#/operator/%3f">?</a>               <span class=DMc>// ternary a ? b : c</span>
-<a href="#/operator/=">=</a> <a href="#/operator/+=">+=</a> <a href="#/operator/-=">-=</a> <a href="#/operator/-=">-=</a> <a href="#/operator/*=">*=</a> <a href="#/operator//=">/=</a> <a href="#/operator/%=">%=</a> <a href="#/operator/&=">&amp;=</a> <a href="#/operator/|=">|=</a> <a href="#/operator/^=">^=</a> <a href="#/operator/%3c%3c=">&lt;&lt;=</a> <a href="#/operator/%3e%3e=">&gt;&gt;=</a>
+<a href="#/operator/=">=</a> <a href="#/operator/+=">+=</a> <a href="#/operator/-=">-=</a> <a href="#/operator/-=">-=</a> <a href="#/operator/*=">*=</a> <a href="#/operator//=">/=</a> <a href="#/operator/%=">%=</a> <a href="#/operator/&=">&amp;=</a> <a href="#/operator/|=">|=</a> <a href="#/operator/^=">^=</a> <a href="#/operator/%3c%3c=">&lt;&lt;=</a> <a href="#/operator/%3e%3e=">&gt;&gt;=</a> <a href="#/operator/:=">:=</a> <a href="#/operator/&&=">&amp;&amp;=</a> <a href="#/operator/||=">||=</a>
 </pre>
 
 <p>Each line has higher order of operations than the next.  Operators within
@@ -11601,7 +11730,8 @@ a line have equal precedence and therefore are processed from left to right
 as they occur in an expression. (Assignment, or operate-and-assign, are
 processed from right to left.)
 
-<p>Expressions of the form: A #= B are shorthand for:  A = A # B
+<p>Expressions of the form <tt>A #= B</tt> are shorthand for
+<tt>A = A # B</tt> except for <tt>~=</tt> and <tt>:=</tt>.
 
 <h3>Example:</h3>
 <xmp>
@@ -11618,7 +11748,7 @@ if(N==2 && 1/2==0.5) N = 0.5   // 0.5
 <h2>! operator</h2>
 
 <dl><dt><b>See also:</b>
-<dd><a href=#/operator/&&>&& operator</a>
+<dd><a href=#/operator/&&>&amp;&amp; operator</a>
 <dd><a href=#/operator>operators</a>
 <dd><a href=#/operator/||>|| operator</a>
 </dl>
@@ -11701,10 +11831,10 @@ by B.
 <hr>
 
 <a name=/operator/&>
-<h2>& operator</h2>
+<h2>&amp; operator</h2>
 
 <dl><dt><b>See also:</b>
-<dd><a href=#/operator/&=>&= operator</a>
+<dd><a href=#/operator/&=>&amp;= operator</a>
 <dd><a href=#/operator>operators</a>
 <dd><a href=#/operator/|>| operator</a>
 </dl>
@@ -11730,7 +11860,7 @@ areas in either icon will be transparent in the result.
 <hr>
 
 <a name=/operator/&&>
-<h2>&& operator</h2>
+<h2>&amp;&amp; operator</h2>
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/operator/!>! operator</a>
@@ -11752,11 +11882,43 @@ argument to be evaluated.
 
 <hr>
 
-<a name=/operator/&=>
-<h2>&= operator</h2>
+<a name=/operator/&&=>
+<h2 byondver=514>&amp;&amp;= operator</h2>
 
 <dl><dt><b>See also:</b>
-<dd><a href=#/operator/&>& operator</a>
+<dd><a href=#/operator/&&>&amp;&amp; operator</a>
+<dd><a href=#/operator/||>|| operator</a>
+<dd><a href=#/operator/||=>||= operator</a>
+<dd><a href=#/operator>operators</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>A &amp;&amp;= B
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>Value of <tt>(A &amp;&amp; B)</tt> after it has been assigned to A. This
+expression can stand by itself; its result does not need to be assigned to
+anything else.
+</dl>
+
+<p>First A is evaluated. If its value is true, B will be evaluated and
+assigned to A. If A is false, B will not be evaluated and A will remain
+unchanged.
+
+<p>Note that this is slightly different from <tt>if(A) A = B</tt> if A is
+a complex expression such as <tt>list[index++]</tt>, because the expression
+is only evaluated once.
+
+<p>This operator cannot be overloaded.
+
+<hr>
+
+<a name=/operator/&=>
+<h2>&amp;= operator</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/operator/&>&amp; operator</a>
 <dd><a href=#/operator>operators</a>
 <dd><a href=#/operator/|=>|= operator</a>
 </dl>
@@ -11969,6 +12131,7 @@ width of 24 bits.
 <dd><a href=#/proc/ftp>ftp proc</a>
 <dd><a href=#/proc/image>image proc</a>
 <dd><a href=#/proc/link>link proc</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 <dd><a href=#/proc/run>run proc</a>
 <dd><a href=#/proc/sound>sound proc</a>
 </dl>
@@ -12408,6 +12571,33 @@ at runtime.
 
 <hr>
 
+<a name=/operator/:=>
+<h2 byondver=514>:= operator</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/operator/=>= operator</a>
+<dd><a href=#/operator>operators</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>A := B
+</dl>
+
+<p>This is the "assign into" operator. The value of B is evaluated, then A. If
+A is a datum that has an <tt>operator:=</tt> proc overloading this operator,
+then that proc will be called with A as its src and B as its only argument.
+The return value of the proc (which defaults to its src, the old value of A)
+is assigned into the var that holds A.
+
+<p>If A was not a datum, then B is assigned into the var as if this were an
+ordinary A = B assignment.
+
+<p>A common use of this operator might be to copy another datum. This is
+basically just "syntactic sugar" to make certain datums easier to work with,
+and is intended mainly for situations where you've overloaded the operator.
+
+<hr>
+
 <a name=/operator/=>
 <h2>= operator</h2>
 
@@ -12418,10 +12608,13 @@ at runtime.
 <dd><a href=#/operator//=>/= operator</a>
 <dd><a href=#/operator/%=>%= operator</a>
 <dd><a href=#/operator/|=>|= operator</a>
-<dd><a href=#/operator/&=>&= operator</a>
+<dd><a href=#/operator/&=>&amp;= operator</a>
 <dd><a href=#/operator/^=>^= operator</a>
 <dd><a href=#/operator/%3c%3c=>&lt;&lt;= operator</a>
 <dd><a href=#/operator/%3e%3e=>&gt;&gt;= operator</a>
+<dd><a href=#/operator/*=>:= operator</a>
+<dd><a href=#/operator/||=>||= operator</a>
+<dd><a href=#/operator/&&=>&amp;&amp;= operator</a>
 <dd><a href=#/operator>operators</a>
 </dl>
 
@@ -12552,9 +12745,9 @@ world << M?.name    // outputs "futz"
 M?.Move(loc)        // call Move() mob proc for M
 </xmp>
 
-<p>When reading <code>A?.B</code>, it's equivalent to <code>A &amp;&amp; A.B</code>
+<p>When reading <code>A?.B</code>, it's roughly equivalent to <code>A &amp;&amp; A.B</code>
 except that <code>A</code> is only evalulated once, even if it's a complex
-expression like a proc call.  Making an assignment to <code>A?.B</code> is
+expression like a proc call. Making an assignment to <code>A?.B</code> is
 the same: A is evalulated only once, and if it's not null then an assignment
 is made to its B var.
 
@@ -12599,7 +12792,7 @@ world << M?:name    // outputs "futz"
 M?:Move(loc)        // call Move() mob proc for M
 </xmp>
 
-<p>When reading <code>A?:B</code>, it's equivalent to <code>A &amp;&amp; A:B</code>
+<p>When reading <code>A?:B</code>, it's roughly equivalent to <code>A &amp;&amp; A:B</code>
 except that <code>A</code> is only evalulated once, even if it's a complex
 expression like a proc call.  Making an assignment to <code>A?:B</code> is
 the same: A is evalulated only once, and if it's not null then an assignment
@@ -12611,12 +12804,57 @@ reason ?. is usually safer.
 
 <hr>
 
+<a name=/operator/%3f[]>
+<h2 byondver=514>?[] operator</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/list>list</a>
+<dd><a href=#/operator>operators</a>
+<dd><a href=#/operator/[]>[] operator</a>
+<dd><a href=#/operator/%3f%2e>?. operator</a>
+<dd><a href=#/operator/%3f:>?: operator</a>
+</dl>
+
+<p>This is the null-conditional list index operator. It is used to access an
+element of a list, IF that list is not null. If the list is null, then the
+access will not happen and the index expression inside the brackets won't be
+evaluated. If this is the left-hand side of an assignment operator, such as
+<tt>list?[index] = rhs</tt>, then <tt>rhs</tt> is also not evaluated when the
+list is null.
+
+<h3>Example:</h3>
+<xmp>
+var/list/good = list(5,6,7)
+var/list/bad
+var/idx = 1
+
+// prints null because bad is null; idx is not changed
+world << json_encode(bad?[idx++])
+// prints 5 because good is not null, and good[1] is 5; idx changes to 2
+world << json_encode(good?[1])
+
+idx = 1 // reset idx
+
+// bad is null, so idx does not advance and myproc() is not called
+bad?[idx++] = myproc()
+// good is not null, so idx advances after read, and myproc() is called
+good?[idx++] = myproc()
+</xmp>
+
+<p>This operator cannot be overloaded, but overloads to the <tt>[]</tt>
+operator will apply to this operator as well.
+
+<p>
+
+<hr>
+
 <a name=/operator/[]>
 <h2>[] operator</h2>
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/list>list</a>
 <dd><a href=#/operator>operators</a>
+<dd><a href=#/operator/%3f[]>?[] operator</a>
 </dl>
 
 <p>This is used to access an element of a list.
@@ -12626,6 +12864,11 @@ reason ?. is usually safer.
 var/L[2]  // declares list of size 2
 L[1] = 10 // assign first element
 </xmp>
+
+<p>If you want to use a datum like a list, you can <a href=#/operator/overload>overload</a>
+the operator by defining an <tt>operator[]</tt> proc for reading a value, and
+<tt>operator[]=</tt> for writing a value. Those overloads also apply if you use the
+null-conditional <tt>?[]</tt> operator.
 
 <hr>
 
@@ -12975,7 +13218,7 @@ mob/Login()
 <h2>| operator</h2>
 
 <dl><dt><b>See also:</b>
-<dd><a href=#/operator/&>& operator</a>
+<dd><a href=#/operator/&>&amp; operator</a>
 <dd><a href=#/operator>operators</a>
 <dd><a href=#/operator/|=>|= operator</a>
 </dl>
@@ -12996,7 +13239,7 @@ either list. list(1,2) | list(2,3) is equivalent to list(1,2,3). The items
 from A come first in the result, followed by any extra items from B.
 
 <p>If A is an icon or /icon datum, it is blended with B which can be either
-a color or another icon. Unlike the + or & operation, the result is
+a color or another icon. Unlike the + or &amp; operation, the result is
 transparent only in places where both icons were transparent.
 
 <hr>
@@ -13005,7 +13248,7 @@ transparent only in places where both icons were transparent.
 <h2>|= operator</h2>
 
 <dl><dt><b>See also:</b>
-<dd><a href=#/operator/&=>&= operator</a>
+<dd><a href=#/operator/&=>&amp;= operator</a>
 <dd><a href=#/operator>operators</a>
 <dd><a href=#/operator/|>| operator</a>
 </dl>
@@ -13036,7 +13279,7 @@ creating a new one and re-assigning it to A.
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/operator/!>! operator</a>
-<dd><a href=#/operator/&&>&& operator</a>
+<dd><a href=#/operator/&&>&amp;&amp; operator</a>
 <dd><a href=#/operator>operators</a>
 </dl>
 
@@ -13051,6 +13294,38 @@ creating a new one and re-assigning it to A.
 <p>The first true value from left to right completes the evaluation (a
 practice known as short-circuiting).  The entire expression takes the value
 of the last argument to be evaluated.
+
+<hr>
+
+<a name=/operator/||=>
+<h2 byondver=514>||= operator</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/operator/||>|| operator</a>
+<dd><a href=#/operator/&&>&amp;&amp; operator</a>
+<dd><a href=#/operator/&&=>&amp;&amp;= operator</a>
+<dd><a href=#/operator>operators</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>A ||= B
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>Value of <tt>(A || B)</tt> after it has been assigned to A. This
+expression can stand by itself; its result does not need to be assigned to
+anything else.
+</dl>
+
+<p>First A is evaluated. If its value is false, B will be evaluated and
+assigned to A. If A is true, B will not be evaluated and A will remain
+unchanged.
+
+<p>Note that this is slightly different from <tt>if(!A) A = B</tt> if A is
+a complex expression such as <tt>list[index++]</tt>, because the expression
+is only evaluated once.
+
+<p>This operator cannot be overloaded.
 
 <hr>
 
@@ -13214,6 +13489,7 @@ complex     // complex number a+bi
 <tr><td>A ^= B</td><td>A.operator^=(B)</td><td></td></tr>
 <tr><td>A &lt;&lt;= B</td><td>A.operator&lt;&lt;=(B)</td><td></td></tr>
 <tr><td>A &gt;&gt;= B</td><td>A.operator&gt;&gt;=(B)</td><td></td></tr>
+<tr><td>A := B</td><td>A.operator:=(B)</td><td></td></tr>
 <tr><td>++A</td><td>A.operator++()</td><td></td></tr>
 <tr><td>--A</td><td>A.operator--()</td><td></td></tr>
 <tr><td>A++</td><td>A.operator++(1)</td><td></td></tr>
@@ -13423,6 +13699,7 @@ the mob moves.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/CRASH>CRASH proc</a>
 <dd><a href=#/DM/preprocessor/define/DEBUG>DEBUG definition</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -13579,10 +13856,10 @@ mob/verb/self_destruct()
 <dl><dt><b>Args:</b>
 <dd>Object: The atom, image, or client to animate. (Leave out to do a following animation step on the same object.)
 <dd>var1=new_value1, var2=new_value2, ...: Vars to change in the animation step.
-<dd>time: Time of this step, in 1/10s.
-<dd>loop: Number of times to show the animation, or -1 to loop forever
-<dd>easing: The "curve" followed by this animation step
-<dd>flags: Flags that impact how the animation acts
+<dd>time: Time of this step, in 1/10s. (may be a <a href=#/proc/arguments/named>named argument</a>)
+<dd>loop: Number of times to show the animation, or -1 to loop forever (may be a named argument)
+<dd>easing: The "curve" followed by this animation step (may be a <a href=#/proc/arguments/named>named argument</a>)
+<dd byondver=509>flags: Flags that impact how the animation acts (may be a <a href=#/proc/arguments/named>named argument</a>)
 </dl>
 
 <p>This proc creates an animation sequence that will be displayed to players.
@@ -13614,7 +13891,7 @@ obj/spell/proc/Spin()
 
 <ul>
 <li>alpha</li>
-<li>color</li>
+<li>color (if used, you may also include a named argument called <tt byondver=514>space</tt> for the <a href=#/{{appendix}}/color-space>color space</a>)</li>
 <li>glide_size</li>
 <li>infra_luminosity</li>
 <li>layer</li>
@@ -13640,6 +13917,12 @@ than smoothly:
 <li>invisibility</li>
 <li>maptext</li>
 <li>suffix</li>
+</ul>
+
+<p>Other vars may apply:
+
+<ul>
+<li byondver=514>space: A named var for the <a href=#/{{appendix}}/color-space>color space</a>, if animating color; only applies to non-matrix color values.</li>
 </ul>
 
 <p byondver=513>For convenience, you can use an
@@ -14034,6 +14317,8 @@ mob/verb/test()
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/arguments/named>named arguments (proc)</a>
 <dd><a href=#/operator/path>path operators</a>
+<dd><a href=#/proc/arglist>arglist proc</a>
+<dd><a href=#/proc/var/args>args var (proc)</a>
 </dl>
 
 <p>The parameters to a proc are referred to as arguments.  To define
@@ -14959,6 +15244,13 @@ it.
 <a name=/proc/copytext>
 <h2>copytext proc</h2>
 
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/splicetext>splicetext proc</a>
+<dd><a href=#/proc/findtext>findtext proc</a>
+<dd><a href=#/proc/splittext>splittext proc</a>
+<dd><a href=#/list/proc/Copy>Copy proc (list)</a>
+</dl>
+
 <dl><dt><b>Format:</b>
 <dd>copytext(T,Start=1,End=0)
 </dl>
@@ -15118,6 +15410,7 @@ while(i)
 <dd><a href=#/proc/try>try and catch keywords</a>
 <dd><a href=#/proc/throw>throw keyword</a>
 <dd><a href=#/exception>exception</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -15190,6 +15483,7 @@ is world.dmb.
 <dd><a href=#/DM/cache>cache</a>
 <dd><a href=#/proc/fcopy>fcopy proc</a>
 <dd><a href=#/proc/file>file proc</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -15815,6 +16109,61 @@ the game.
 
 <hr>
 
+<a name=/proc/generator>
+<h2 byondver=514>generator proc</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/generators>Generators</a>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+<dd><a href=#/atom/var/color>color var (atom)</a>
+<dd><a href=#/{notes}/color-matrix>Color matrix</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>generator(type, A, B, rand)
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>type: The type of generator object, which determines what kind of results it produces
+<dd>A: One extreme of the generator results
+<dd>B: The other extreme
+<dd>rand: Type of random distribution used
+</dl>
+
+<p>Creates a generator that can be used to produce a random value. This generator can be used in client-side particle effects, or it can be used in proc code. The types of values it can produce are numbers, 3D vectors (list of 3 numbers), or colors (a text string like "#rrggbb" or a color matrix).
+
+<table class=codefirst>
+<tr><th>Generator type</th><th>Result type</th><th>Description</th></tr>
+<tr><td>num</td><td>num</td><td>A random number between A and B.</td></tr>
+<tr><td>vector</td><td>vector</td><td>A random vector on a line between A and B.</td></tr>
+<tr><td>box</td><td>vector</td><td>A random vector within a box whose corners are at A and B.</td></tr>
+<tr><td>color</td><td>color (string) or color matrix</td><td>Result type depends on whether A or B are matrices or not. The result is interpolated between A and B; components are not randomized separately.</td></tr>
+<tr><td>circle</td><td>vector</td><td>A random XY-only vector in a ring between radius A and B, centered at 0,0.</td></tr>
+<tr><td>sphere</td><td>vector</td><td>A random vector in a spherical shell between radius A and B, centered at 0,0,0.</td></tr>
+<tr><td>square</td><td>vector</td><td>A random XY-only vector between squares of sizes A and B. (The length of the square is between A*2 and B*2, centered at 0,0.)</td></tr>
+<tr><td>cube</td><td>vector</td><td>A random vector between cubes of sizes A and B. (The length of the cube is between A*2 and B*2, centered at 0,0,0.)</td></tr>
+</table>
+
+<p>The optional <tt>rand</tt> argument determines the type of random distribution.
+
+<table class=codefirst>
+<tr><td>UNIFORM_RAND</td><td>Default. Random values are uniformly likely to be chosen.</td></tr>
+<tr><td>NORMAL_RAND</td><td>Approximates a Gaussian normal distribution, but on a finite interval. Values closest to the mean are more likely to be chosen, while the extremes are much less likely.</td></tr>
+<tr><td>LINEAR_RAND</td><td>The probabiliy of choosing a number is proportional to its absolute value.</td></tr>
+<tr><td>SQUARE_RAND</td><td>The probabiliy of choosing a number is proportional to its square.</td></tr>
+</table>
+
+<p>The result of calling <tt>generator()</tt> is a datum of type <tt>/generator</tt> and you can get a random value from it by calling its <tt>Rand()</tt> proc.
+
+<h3>Example:</h3>
+<xmp>
+var/generator/G = generator("num", -1, 1)    // generates a random number between -1 and 1
+world << G.Rand()   // generate a number and output it to world
+</xmp>
+
+<hr>
+
 <a name=/proc/get_dir>
 <h2>get_dir proc</h2>
 
@@ -16048,6 +16397,74 @@ Normally, you'll want to use a construct like <tt>while()</tt> or
 <tt>for()</tt> loops, and <tt>break</tt> and <tt>continue</tt> statements.
 <tt>goto</tt> is for more complex situations that aren't readily handled by
 any of these.</p>
+
+<hr>
+
+<a name=/proc/gradient>
+<h2>gradient proc</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/color-gradient>Color gradient</a>
+<dd><a href=#/proc/rgb>rgb proc</a>
+<dd><a href=#/proc/rgb2num>rgb2num proc</a>
+<dd><a href=#/{{appendix}}/color-space>Color space</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>gradient(Item1, Item2, ..., index)
+<dd>gradient(Gradient, index)
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>Gradient: A <a href=#/{notes}/color-gradient>color gradient</a> list
+<dd>Item1, Item2...: Elements of a <a href=#/{notes}/color-gradient>color gradient</a> list
+<dd>index: The index along the gradient where the interpolation is done.
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>A color, represented by a text string in #RRGGBB or #RRGGBBAA format
+</dl>
+
+<p>Interpolates between two or more colors along a <a href=#/{notes}/color-gradient>color
+gradient</a>. By default, gradients extend from an index of 0 to 1, but they
+are allowed to go beyond that if you choose.
+
+<p>The simplest way to use this proc is to interpolate between two colors:
+
+<h3>Example:</h3>
+<xmp>
+// 20% of the way from red to black
+// prints #cc0000 which is rgb(204,0,0)
+src << gradient("red", "black", 0.2)
+</xmp>
+
+<p>Anything that applies to color gradients can be used in this proc, so you
+can have a looping gradient, or a gradient that uses a color space other than
+RGB.
+
+<p>In the first format where you specify all the items separately, you can use
+<a href=#/proc/arguments/named>named arguments</a> for <tt>index</tt> and
+<tt>space</tt> (the gradient's color space). If you don't specify an argument called
+"index", the last argument is assumed to be the index.
+
+<h3>Example:</h3>
+<xmp>
+// This gradient loops through all the hues and goes from 0 to 6.
+// Because this is a looping gradient, index=10 becomes index=4.
+// In HSL, this will give you blue (#0000ff).
+src << gradient(0, "#f00", 3, "#0ff", 6, "#f00", "loop", space=COLORSPACE_HSL, index=10)
+</xmp>
+
+<p>The <tt>gradient(Gradient, index)</tt> format is used for cases where you
+want to pass an existing gradient to the proc.
+
+<h3>Example:</h3>
+<xmp>
+var/candy_cane_gradient = list(0.5,"red",0.5,"white","loop")
+
+// the color output alternates between red and white depending on the current time
+src << gradient(candy_cane_gradient, world.time/100)
+</xmp>
 
 <hr>
 
@@ -17200,6 +17617,51 @@ real references by using locate().
 
 <hr>
 
+<a name=/proc/load_resource>
+<h2>load_resource proc</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/operator/%3c%3c/output>&lt;&lt; output operator</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>Player &lt;&lt; load_resource(File)
+<dd>Player &lt;&lt; load_resource(File, KeepTime)
+<dd>Player &lt;&lt; load_resource(File1, File2..., KeepTime1, File3, File4..., KeepTime2...)
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>Player: A mob or client, a list of them, or world
+<dd>File: A resource file (image or sound)
+<dd>KeepTime: Minimum time (in seconds) to keep the file loaded; 0=default, -1=forever
+</dl>
+
+<p>Tells the player's client (or multiple players) to load the specified
+resources now, and how long to keep them. If you do not specify a keep time, 0
+is used which will use the default time.
+
+<p>This may be useful for loading sounds into memory before they play, or to
+load an icon as soon as possible even if it hasn't been displayed yet. This
+can avoid delays later on when the resources are needed.
+
+<p>Dream Seeker keeps most assets loaded for at least 5 minutes (300 seconds)
+after their  last use. However if you think a more appropriate time is closer
+to half an hour, you can set a keep time of 1800 seconds. Or if you want them
+to stay loaded indefinitely, set a keep time of -1.
+
+<h3>Example:</h3>
+<xmp>
+mob/Login()
+    ..()
+    // load up these songs now and keep them loaded indefinitely
+    src << load_resource('music1.ogg', 'music2.ogg', 'music3.ogg', -1)
+</xmp>
+
+<p>In cases of extreme memory duress, Dream Seeker's garbage collector will
+get more aggressive and can still override your choices if need be.
+
+<hr>
+
 <a name=/proc/locate>
 <h2>locate proc</h2>
 
@@ -17329,7 +17791,7 @@ L = lowertext("HI THERE") // = "hi there"
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/matrix>matrix</a>
-<dd><a href=#atom/var/transform>transform var (atom)</a>
+<dd><a href=#/atom/var/transform>transform var (atom)</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -18216,6 +18678,7 @@ datum, that can be used for searching and/or replacing text.
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/regex>regex proc</a>
 <dd><a href=#/regex>regex datum</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <dl><dt><b>Format:</b>
@@ -18377,21 +18840,41 @@ which defaults to null.
 <a name=/proc/rgb>
 <h2>rgb proc</h2>
 
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/rgb2num>rgb2num proc</a>
+<dd><a href=#/proc/gradient>gradient proc</a>
+<dd><a href=#/{{appendix}}/color-space>Color space</a>
+<dd><a href=#/{{appendix}}/html-colors>HTML colors</a>
+<dd><a href=#/atom/var/color>color var (atom)</a>
+<dd><a href=#/icon/proc/Blend>Blend proc (icon)</a>
+<dd><a href=#/{notes}/color-matrix>Color matrix</a>
+<dd><a href=#/{notes}/filters/color>Color matrix filter</a>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+</dl>
+
 <dl><dt><b>Format:</b>
 <dd>rgb(R,G,B)
-<br/><i>or</i><br/>
-rgb(R,G,B,A)
+<dd>rgb(R,G,B,A)
+<dd>rgb(x,y,z,space=<i>color space</i>)
+<dd>rgb(x,y,z,a,space)
 </dl>
 
 <dl><dt><b>Args:</b>
 <dd>R,G,B: Numbers from 0-255 corresponding to the red, green, and blue
 components of a color.
 <dd>A: Optional alpha component; 0 is transparent, 255 is opaque.
+<dd>x,y,z: Color components for a different color space
+<dd>space: <a href=#/{{appendix}}/color-space>Color space</a>; defaults to <tt>COLORSPACE_RGB</tt>
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>A color, represented by a text string in #RRGGBB or #RRGGBBAA format
 </dl>
 
 <p>A way of representing a color to be used in conjunction with icon
-arithmetic.  The colors <tt>rgb(0,0,0)</tt> and <tt>rgb(255,255,255)</tt>
-represent black and white, two corners of the "color cube".
+arithmetic, atom.color, or other effects.  The colors <tt>rgb(0,0,0)</tt>
+and <tt>rgb(255,255,255)</tt> represent black and white, two corners of the
+"color cube".
 
 <h3>Example:</h3>
 <xmp>
@@ -18405,6 +18888,88 @@ the format is #RRGGBBAA. You can use strings like this in most procs that use
 colors such as icon blending operations, and you can also use the short form
 #RGB or #RGBA. So if you know in advance that you want to use the color
 white, you can simply use"#fff" instead of rgb(255,255,255).
+
+<p>You can create colors other ways by specifying a different
+<a href=#/{{appendix}}/color-space>color space</a>. A color space can be
+specified by using a <a href=#/proc/arguments/named>named</a> "space" argument,
+or by using a 5-argument format (you can leave the alpha value blank or null to
+skip it), or by using named arguments for the other components.
+
+<h3>Example:</h3>
+<xmp>
+// All of these lines are equivalent.
+// They create (0,100,50) in HSL which is red (#ff0000).
+src << rgb(0, 100, 50, space=COLORSPACE_HSL)
+src << rgb(0, 100, 50, , COLORSPACE_HSL)
+src << rgb(h=0, s=100, l=50)
+</xmp>
+
+<p>Named arguments that are valid in <tt>rgb()</tt> are:
+
+<ul>
+<li><tt>space</tt></li>
+<li><tt>red</tt></li>
+<li><tt>green</tt></li>
+<li><tt>blue</tt></li>
+<li><tt>alpha</tt></li>
+<li><tt>hue</tt></li>
+<li><tt>saturation</tt></li>
+<li><tt>chroma</tt></li>
+<li><tt>value</tt></li>
+<li><tt>luminance</tt></li>
+<li><tt>y</tt> (HCY luminance)</li>
+</ul>
+
+<p>With the exception of <tt>space</tt>, only the first letter of the argument
+name matters, so <tt>r</tt> and <tt>red</tt> are the same thing.
+
+<hr>
+
+<a name=/proc/rgb2num>
+<h2>rgb2num proc</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/rgb>rgb proc</a>
+<dd><a href=#/proc/gradient>gradient proc</a>
+<dd><a href=#/{{appendix}}/color-space>Color space</a>
+<dd><a href=#/{{appendix}}/html-colors>HTML colors</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>rgb2num(color)
+<dd>rgb2num(color, space)
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>color: A color value (see <a href=#/{{appendix}}/html-colors>HTML colors</a>)
+<dd>space: <a href=#/{{appendix}}/color-space>Color space</a>; default is <tt>COLORSPACE_RGB</tt>
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>A list with the components of this color
+</dl>
+
+<p>Parses a color into a list with 3 or 4 component values; the 4th value is
+alpha, if it's part of the color provided.
+
+<h3>Example:</h3>
+<xmp>
+var/list/RGB = rgb2num("#ff8000")
+src << RGB[1]     // red (255)
+src << RGB[2]     // green (128)
+src << RGB[3]     // blue (0)
+</xmp>
+
+<p>By specifying a different color space, you can convert a color into a
+different format.
+
+<h3>Example:</h3>
+<xmp>
+var/list/HSL = rgb2num("#5af", COLORSPACE_HSL)
+src << HSL[1]     // hue (210)
+src << HSL[2]     // saturation (100)
+src << HSL[3]     // luminance (66.6667)
+</xmp>
 
 <hr>
 
@@ -18980,7 +19545,9 @@ renamed, but old code will still compile.
 
 <dl><dt><b>See also:</b>
 <dd><a href=#/operator/%3c%3c/output>&lt;&lt; output operator</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 </dl>
+
 <dl><dt><b>Format:</b>
 <dd>sound(file,repeat=0,wait,channel,volume)
 <dd><small>(supports named arguments)</small>
@@ -19097,6 +19664,54 @@ copied between the spawned code and the code that runs right away. This means
 that if one part modifies one of those vars, the other part will not see that
 change. Changes made to objects, lists, datums, etc. however will be visible
 to both code blocks.
+
+<hr>
+
+<a name=/proc/splicetext>
+<h2 byondver=514>splicetext proc</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/copytext>copytext proc</a>
+<dd><a href=#/list/proc/Splice>Splice proc (list)</a>
+</dl>
+
+<dl><dt><b>Format:</b>
+<dd>splicetext(Text,Start=1,End=0,Insert="")
+</dl>
+
+<dl><dt><b>Returns:</b>
+<dd>Spliced text
+</dl>
+
+<dl><dt><b>Args:</b>
+<dd>Text: The text string to splice.
+<dd>Start: The text byte position in Text where the splice will begin.
+<dd>End: The text byte position in Text immediately following the last
+     character to be cut from the splice. 0 is the end of the string.
+<dd>Insert: Text to be inserted.
+</dl>
+
+<p>Cuts out a section of a text string and inserts a different piece of text
+in its place. This is basically equivalent to <tt>copytext(Text,1,Start) +
+Insert + copytext(Text,End)</tt>, but faster.
+
+<h3>Example:</h3>
+<xmp>
+// cuts "nan" from "banana" and replaces it with "laclav"
+// prints "balaclava"
+usr << splicetext("banana", 3, 6, "laclav")
+</xmp>
+
+<p>The <tt>Start</tt> and <tt>End</tt> index values can be negative, which
+count backwards from the end of the string. If the index values are out of
+range, there will be no error; they will simply be clamped to the beginning
+or end of the string. If <tt>End</tt> comes before <tt>Start</tt>, the two
+values are swapped.
+
+<p>Note: In strings containing non-ASCII characters, byte position and
+character position are not the same thing. Use <tt>splicetext_char()</tt> to
+work with character counts instead of bytes, at a performance cost. See the
+<a href="#/{notes}/Unicode">Unicode</a> section for more information.
 
 <hr>
 
@@ -19823,7 +20438,7 @@ if(myturf)
 <dl><dt><b>See also:</b>
 <dd><a href=#/proc/try>try keyword</a>
 <dd><a href=#/world/proc/Error>Error proc (world)</a>
-<dd><a href=#/proc/EXCEPTION>EXCEPTION macro</a>
+<dd><a href=#/proc/EXCEPTION>EXCEPTION proc</a>
 <dd><a href=#/exception>exception</a>
 </dl>
 
@@ -19863,23 +20478,27 @@ datum; you can throw anything, even null.
 <dl><dt><b>See also:</b>
 <dd><a href=#/world/var/realtime>realtime var (world)</a>
 <dd><a href=#/world/var/timeofday>timeofday var (world)</a>
+<dd><a href=#/world/var/timezone>timezone var (world)</a>
+<dd><a href=#/client/var/timezone>timezone var (client)</a>
 </dl>
 
 <dl><dt><b>Format:</b>
-<dd>time2text(timestamp,format)
+<dd>time2text(timestamp,format,timezone)
 </dl>
 
 <dl><dt><b>Args:</b>
 <dd>timestamp: a time value as obtained from world.realtime or world.timeofday
 <dd>format: a text string describing the output format.
+<dd byondver=514>timezone: optional offset, in hours, from UTC
 </dl>
 
 <dl><dt><b>Returns:</b>
 <dd>a text string containing the date and time in the specified format.
 </dl>
 
-<p>A time value (GMT) is converted to text representing the time in the game's
-time zone.
+<p>A time value (UTC) is converted to text representing the time. The world's
+local time is used, unless you specify a <tt>timezone</tt> argument which will
+add an offset to UTC.
 
 <p>The default format is "DDD MMM DD hh:mm:ss YYYY", which produces results
 such as "Wed, May 23 15:41:13 2001".  As you can see, the fields in the format
@@ -19914,7 +20533,7 @@ coming from world.realtime and will have the right time and date.
 <dl><dt><b>See also:</b>
 <dd><a href=#/world/proc/Error>Error proc (world)</a>
 <dd><a href=#/proc/throw>throw keyword</a>
-<dd><a href=#/proc/EXCEPTION>EXCEPTION macro</a>
+<dd><a href=#/proc/EXCEPTION>EXCEPTION proc</a>
 <dd><a href=#/exception>exception</a>
 </dl>
 
@@ -21004,6 +21623,7 @@ equivalent to setting <tt>is-visible</tt> via <tt>winset()</tt>.
 <dd><a href=#/proc/REGEX_QUOTE>REGEX_QUOTE proc</a>
 <dd><a href=#/proc/findtext>findtext proc</a>
 <dd><a href=#/proc/splittext>splittext proc</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>The /regex datum holds a regular expression that can be used for
@@ -21755,6 +22375,8 @@ world << "F2.name = [F2]"
 <dl><dt><b>See also:</b>
 <dd><a href=#/sound/var>vars (sound)</a>
 <dd><a href=#/proc/sound>sound proc</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
+<dd><a href=#/proc/load_resource>load_resource proc</a>
 </dl>
 
 <p>A <tt>/sound</tt> datum is created by the <tt>sound()</tt> proc or by
@@ -22677,6 +23299,8 @@ scroll exists in the user's inventory.  In other words, the player types
 <dl><dt><b>See also:</b>
 <dd><a href=#/verb/arguments/expanding>argument expanding</a>
 <dd><a href=#/client/var/command_text>command_text (client)</a>
+<dd><a href=#/proc/arglist>arglist proc</a>
+<dd><a href=#/verb/var/args>args var (verb)</a>
 </dl>
 
 <p>The parameters to a verb are referred to as arguments.  For verbs, the
@@ -24411,10 +25035,12 @@ list are logged in to the remote server.
 <dd><a href=#/world/var/log>log</a>
 <dd><a href=#/world/var/loop_checks>loop_checks</a>
 <dd><a href=#/world/var/map_format>map_format</a>
+<dd><a href=#/world/var/map_cpu>map_cpu</a>
 <dd><a href=#/world/var/maxx>maxx</a>
 <dd><a href=#/world/var/maxy>maxy</a>
 <dd><a href=#/world/var/maxz>maxz</a>
 <dd><a href=#/world/var/mob>mob</a>
+<dd><a href=#/world/var/movement_mode>movement_mode</a>
 <dd><a href=#/world/var/name>name</a>
 <dd><a href=#/world/var/params>params</a>
 <dd><a href=#/world/var/port>port</a>
@@ -24427,6 +25053,7 @@ list are logged in to the remote server.
 <dd><a href=#/world/var/tick_usage>tick_usage</a>
 <dd><a href=#/world/var/time>time</a>
 <dd><a href=#/world/var/timeofday>timeofday</a>
+<dd><a href=#/world/var/timezone>timezone</a>
 <dd><a href=#/world/var/turf>turf</a>
 <dd><a href=#/world/var/url>url</a>
 <dd><a href=#/datum/var/vars>vars</a>
@@ -24559,19 +25186,24 @@ full for(A in world.contents).
 <h2>cpu var (world)</h2>
 
 <dl><dt><b>See also:</b>
+<dd><a href=#/world/var/map_cpu>map_cpu var (world)</a>
 <dd><a href=#/world/var/tick_lag>tick_lag var (world)</a>
 <dd><a href=#/world/var/tick_usage>tick_usage var (world)</a>
 </dl>
 
 <p>This is the percentage of a server tick that the server spends processing
-running procs.  A value of 0 would indicate very little cpu usage.  A value
-of 100 would indicate full cpu usage, which could mean that the server
-cannot complete all the necessary computations during a tick to finish in
-time for the next tick.  In this case, timed events (such as sleep) may take
+running procs and the work of sending map information to players.  A value of 0
+would indicate very little cpu usage.  A value of 100 would indicate full cpu
+usage, which could mean that the server cannot complete all the necessary
+computations during a tick to finish in time for the next tick.  In this case,
+timed events (such as sleep) may take
 longer than requested.
 
 <p>When deciding on a value for tick_lag, one could use this value to
 determine if the CPU is fast enough to tick at a higher rate.
+
+<p>The <tt>map_cpu</tt> var is a subset of this, measuring only time used for
+sending map information.
 
 <hr>
 
@@ -25038,6 +25670,24 @@ orientation.
 
 <hr>
 
+<a name=/world/var/map_cpu>
+<h2 byondver=514>map_cpu var (world)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/world/var/cpu>cpu var (world)</a>
+<dd><a href=#/world/var/tick_lag>tick_lag var (world)</a>
+<dd><a href=#/world/var/tick_usage>tick_usage var (world)</a>
+</dl>
+
+<p>This is the percentage of a server tick that the server spends processing
+information about the map to send to players.  A value of 0 would indicate very
+little cpu usage.  A value of 100 would indicate full cpu usage, which means
+that the server cannot complete all the necessary computations during a tick to
+finish in time for the next tick.  In this case, timed events (such as sleep)
+may take longer than requested.
+
+<hr>
+
 <a name=/world/var/maxx>
 <h2>maxx var (world)</h2>
 
@@ -25149,6 +25799,49 @@ mob/newbie
 
 <p>This example will connect new players to mobs of type /mob/newbie.  They
 are welcomed when they connect.
+
+<hr>
+
+<a name=/world/var/movement_mode>
+<h2>movement_mode var (world)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/atom/var/appearance_flags>appearance_flags var (atom)</a>
+<dd><a href=#/atom/proc/Enter>Enter proc (atom)</a>
+<dd><a href=#/atom/proc/Exit>Exit proc (atom)</a>
+<dd><a href=#/atom/proc/Cross>Cross proc (atom)</a>
+<dd><a href=#/atom/proc/Uncross>Unccross proc (atom)</a>
+<dd><a href=#/{notes}/pixel-movement>Pixel movement</a>
+<dd><a href=#/{notes}/gliding>Gliding</a>
+</dl>
+
+<dl><dt><b>Possible values:</b>
+<dd><tt>LEGACY_MOVEMENT_MODE</tt>: Old BYOND behavior regarding pixel movement and turf contents (see below)
+<dd><tt>TILE_MOVEMENT_MODE</tt>: All atoms are locked to the tile grid
+<dd><tt>PIXEL_MOVEMENT_MODE</tt>: All movable atoms can use pixel movement unless otherwise specified (see below), but legacy behavior for turf contents is ignored
+</dl>
+
+<dl class=codedd><dt><b>Default value:</b>
+<dd>LEGACY_MOVEMENT_MODE
+</dl>
+
+<p>Controls how movement works on the map.
+
+<p><tt>TILE_MOVEMENT_MODE</tt> allows you to easily discard any and all pixel
+movement, so if step_x or step_y coordinates or unexpected atom bounds were
+loaded from a savefile, for instance, they would be eliminated. If you use any
+other movement mode, you can give an atom the
+<a class=code href=#/atom/var/appearance_flags>TILE_MOVER</a> flag and it will
+behave as if it were in this mode, while other atoms are free to do their own
+thing.
+
+<p><tt>LEGACY_MOVEMENT_MODE</tt> exists to distinguish between old and new
+movement behavior. In older versions of BYOND before pixel movement, turfs
+took their contents into consideration by default in Enter() and Exit(). This
+doesn't really make sense for newer games, so in any other movement mode the
+turf behavior will ignore its contents. mob.Cross() is also affected, since
+it would return 0 by default in legacy mode when both mobs were dense; now
+by default it checks <tt>mob.group</tt>.
 
 <hr>
 
@@ -25396,6 +26089,22 @@ accurate.
 
 <hr>
 
+<a name=/world/var/timezone>
+<h2 byondver=514>timezone var (world)</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/world/var/realtime>realtime var (world)</a>
+<dd><a href=#/world/var/timeofday>timeofday var (world)</a>
+<dd><a href=#/client/var/timezone>timezone var (client)</a>
+<dd><a href=#/proc/time2text>time2text proc</a>
+</dl>
+
+<p>This is the time offset from UTC, in hours, for the world's time zone. It
+can be used in the <tt>time2text()</tt> proc, although it is the default time
+zone for that proc.
+
+<hr>
+
 <a name=/world/var/turf>
 <h2>turf var (world)</h2>
 
@@ -25526,10 +26235,116 @@ may be harder to understand or that can use more clarification.
 <dd><a href=#/{notes}/HUD>HUD / screen objects</a>
 <dd><a href=#/{notes}/color-matrix>Color matrix</a>
 <dd><a href=#/{notes}/filters>Filter effects</a>
+<dd><a href=#/{notes}/particles>Particle effects</a><dl>
+<dd><a href=#/{notes}/color-gradient>Color gradient</a>
+<dd><a href=#/{notes}/generators>Generators</a></dl>
+<dd><a href=#/{notes}/projection-matrix>Projection matrix</a>
 <dd><a href=#/{notes}/BACKGROUND_LAYER>BACKGROUND_LAYER</a>
 <dd><a href=#/{notes}/EFFECTS_LAYER>EFFECTS_LAYER</a>
 <dd><a href=#/{notes}/TOPDOWN_LAYER>TOPDOWN_LAYER</a>
 </dl>
+
+<hr>
+
+<a href=#/{notes}/{notes}/projection-matrix toc="Projection matrix">
+<h2 byondver=514>Projection matrix</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+<dd><a href=#/atom/var/transform>transform var (atom)</a>
+<dd><a href=#/matrix>matrix</a>
+<dd><a href=#/{notes}/color-matrix>Color matrix</a>
+</dl>
+
+<p>Note: Currently this feature applies only to particle effects, using the
+<tt>transform</tt> var.
+
+<p>Normally icons in BYOND can only be transformed in 2D, using a simple 3x3
+matrix. This is represented by the <tt>/matrix</tt> object, which cuts off the
+last column because it isn't used. However particles can have coordinates in x,
+y, and z, and the whole particle set can be given a transformation matrix that
+handles all three dimensions.
+
+<h3>Simple 2D transforms</h3>
+
+<p>The easiest transformation for particles is a simple 2D one, which you can
+do by setting the particle datum's <tt>transform</tt> var to a <tt>/matrix</tt>
+object.
+
+<pre>          a d 0
+x y 1  *  b e 0  =  x' y' 1
+          c f 1</pre>
+
+<p>When an x,y point is multiplied by the matrix, it becomes the new point
+x',y'. This is equivalent to:
+
+<pre>x' = a*x + b*y + c
+y' = d*x + e*y + f</pre>
+
+<p>This is called an <b>affine transform</b> because all the operations are
+"linear" in math terms. (That is, every term in the formula above has a single
+variable, not raised to a higher power than 1.)
+
+<h3>3x4 matrix (x,y,z with translation)</h3>
+
+<p>3D affine transforms of this type are also affine transformations. There is
+no special object for this so a list is used (see below).
+
+<pre>            xx xy xz 0
+x y z 1  *  yx yy yz 0  =  x' y' z' 1
+            zx zy zz 0
+            cx cy cz 1</pre>
+
+<p>The way to read the vars above is that the first letter says what input
+component is being transformed (x,y,z, or c for "constant"), and the second
+letter is the output component.
+
+<pre>x' = xx*x + yx*y + zx*z + cx
+y' = xy*x + yy*y + zy*z + cy
+z' = xz*x + yz*y + zz*z + cz</pre>
+
+<p>To use this kind of matrix, you can cut off the 4th column and provide the
+values in a list form, in row-major order:
+
+<xmp>list(xx,xy,xz, yx,yy,yz, zx,zy,zz, cx,cy,cz)</xmp>
+
+<p>Note the 4th row is also optional.</p>
+
+<h3>4x4 matrix (x,y,z,w with projection)</h3>
+
+<p>This is the most interesting matrix, since if you use all 4 columns you're
+actually altering an "axis" called w. This isn't a real axis, but is just a
+number that the resulting vector will be divided by.
+
+<pre>            xx xy xz xw
+x y z 1  *  yx yy yz yw  =  x'w' y'w' z'w' w'
+            zx zy zz zw
+            wx wy wz ww
+
+w' = xw*x + yw*y + zw*z + ww
+x' = (xx*x + yx*y + zx*z + wx) / w'
+y' = (xy*x + yy*y + zy*z + wy) / w'
+z' = (xz*x + yz*y + zz*z + wz) / w'</pre>
+
+<p>In a regular affine transform, w always stays at 1. In projection you can
+think of w as a distance from the "camera". 1 is where objects are their
+"normal" size. If you make the z value affect w' by setting zw, you basically
+make an object look smaller at higher z values.
+
+<p>This is a simple projection matrix where x,y,z are left untouched, but
+there's a projection effect. The "D" value is how far away the "camera" is
+from z=0, so a point at z=D looks like it's twice as far away.
+
+<pre>
+1  0  0  0
+0  1  0  0
+0  0  1  1/D
+0  0  0  1
+</pre>
+
+<p>This 4x4 matrix is handled as a list just like the 3x4 affine matrix:
+
+<xmp>list(xx,xy,xz,xw, yx,yy,yz,yw, zx,zy,zz,zw, wx,wy,wz,ww)</xmp>
 
 <hr>
 
@@ -25542,6 +26357,7 @@ may be harder to understand or that can use more clarification.
 <dd><a href=#/world/var/map_format>map_format var (world)</a>
 <dd><a href=#/{notes}/EFFECTS_LAYER>EFFECTS_LAYER</a>
 <dd><a href=#/{notes}/TOPDOWN_LAYER>TOPDOWN_LAYER</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>This is mostly no longer needed. A negative value for plane is the
@@ -25636,6 +26452,83 @@ is blended.
 
 <hr>
 
+<a name=/{notes}/color-gradient toc="Color gradient">
+<h2 byondver=514>Color gradient</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/gradient>gradient proc</a>
+<dd><a href=#/atom/var/color>color var (atom)</a>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+<dd><a href=#/{{appendix}}/color-space>Color space</a>
+</dl>
+
+<p>A color gradient is a special list that defines a range of colors that you
+can smoothly interpolate between. A simple example is a gradient from red to
+white:
+
+<h3>Example:</h3>
+<xmp>
+list("red", "white")
+// OR
+list(0, "red", 1, "white")
+</xmp>
+
+<p>Applying a number like 0.2 to this gradient would give you a color that's
+20% of the way from red to white. More complex gradients however are also
+possible.
+
+<p>The format of a gradient is a list that contains a number (the position
+along the gradient, from 0 to 1 unless you use values outside that range)
+followed by a color. You can have as complex a gradient as you like. If you
+reuse the same number twice in a row, the gradient will have a sudden color
+change at that point.
+
+<p>It is also possible to skip numbers or colors, and they will be filled in
+automatically with the previous number or color. The exceptions are at the
+beginning and ends of the list; at the end of the gradient, the last color is
+assigned a number 1 by default, and the first is assigned 0. If you skip
+colors at the beginning, they will be filled in with the first color you use.
+
+<p>Include "loop" anywhere in the list to make this a looped gradient. If you
+don't, any numbers outside the gradient's range will be clamped to that range.
+E.g., in a normal gradient ranging from 0 to 1, a number of 1.2 is
+interpreted as 1 without a loop and 0.2 with a loop.
+
+<p>Here are some more examples:
+
+<h3>Example:</h3>
+<xmp>
+// color wheel; ranges 0 to 6 and loops
+list(0, "#f00", 1, "#ff0", 2, "#0f0", 3, "#0ff", 4, "#00f", 5, "#f0f", 6, "#f00", "loop")
+
+// 10% each red, yellow, green, blue, with a 20% transition zone between each
+// notice no color follows 0.4 or 0.7, so the previous color is used
+list(0.1, "#f00", 0.3, "#ff0", 0.4, 0.6, "#008000", 0.7, 0.9, "#00f")
+
+// green and black stripes
+list(0.5, "#008000", 0.5, "#000000", "loop")
+</xmp>
+
+<p>You can also include "space" in the list, and give it an associated value
+that describes the color space this gradient uses to interpolate between
+colors. For instance, <tt>"space"=COLORSPACE_HSL</tt> will use HSL
+interpolation instead of the default RGB. See
+<a href=#/{{appendix}}/color-space>Color space</a> for more information.
+
+<h3>Example:</h3>
+<xmp>
+// color wheel with a different color space
+list(0, "#f00", 3, "#0ff", 6, "#f00", "loop", "space"=COLORSPACE_HSLA)
+</xmp>
+
+<p>Currently, color gradients are only used by particle effects and the
+<a href=#/proc/gradient><tt>gradient</tt> proc</a>. With particles, if you use
+a gradient the particle's color is given as a number, and that number is used
+to look up its real color from the gradient. The number can change over time,
+thus changing the particle's color.
+
+<hr>
+
 <a name=/{notes}/color-matrix toc="Color matrix">
 <h2 byondver=509>Color matrix</h2>
 
@@ -25704,6 +26597,7 @@ not as a list.
 <dd><a href=#/world/var/map_format>map_format var (world)</a>
 <dd><a href=#/{notes}/BACKGROUND_LAYER>BACKGROUND_LAYER</a>
 <dd><a href=#/{notes}/TOPDOWN_LAYER>TOPDOWN_LAYER</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>This is mostly no longer needed. A negative value for plane is the
@@ -25763,18 +26657,19 @@ mob.filters += filter(type="drop_shadow", x=0, y=0,\
 <p>These are the filters currently supported:
 
 <ul>
-<li><a href=#/{notes}/filters/alpha>Alpha mask</a></li>
-<li><a href=#/{notes}/filters/angular_blur>Angular blur</a></li>
-<li><a href=#/{notes}/filters/color>Color matrix</a></li>
-<li><a href=#/{notes}/filters/displace>Displacement map</a></li>
+<li byondver=513><a href=#/{notes}/filters/alpha>Alpha mask</a></li>
+<li byondver=513><a href=#/{notes}/filters/angular_blur>Angular blur</a></li>
+<li byondver=514><a href=#/{notes}/filters/bloom>Bloom</a></li>
+<li byondver=513><a href=#/{notes}/filters/color>Color matrix</a></li>
+<li byondver=513><a href=#/{notes}/filters/displace>Displacement map</a></li>
 <li><a href=#/{notes}/filters/drop_shadow>Drop shadow</a></li>
 <li><a href=#/{notes}/filters/blur>Gaussian blur</a></li>
-<li><a href=#/{notes}/filters/layer>Layering (composite)</a>
+<li byondver=513><a href=#/{notes}/filters/layer>Layering (composite)</a>
 <li><a href=#/{notes}/filters/motion_blur>Motion blur</a></li>
 <li><a href=#/{notes}/filters/outline>Outline</a></li>
-<li><a href=#/{notes}/filters/radial_blur>Radial blur</a></li>
-<li><a href=#/{notes}/filters/rays>Rays</a></li>
-<li><a href=#/{notes}/filters/ripple>Ripple</a></li>
+<li byondver=513><a href=#/{notes}/filters/radial_blur>Radial blur</a></li>
+<li byondver=513><a href=#/{notes}/filters/rays>Rays</a></li>
+<li byondver=513><a href=#/{notes}/filters/ripple>Ripple</a></li>
 <li><a href=#/{notes}/filters/wave>Wave</a></li>
 </ul>
 
@@ -25853,6 +26748,51 @@ sqrt(A<sup>2</sup>+B<sup>2</sup>).
 
 <hr>
 
+<a name=/{notes}/filters/bloom toc="Bloom (filters)">
+<h2 byondver=514>Bloom filter</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/filters/blur>Gaussian blur (filters)</a>
+<dd><a href=#/{notes}/filters/drop_shadow>Drop shadow (filters)</a>
+</dl>
+
+<dl><dt>Format:</dt>
+<dd>filter(type="bloom", ...)</dd>
+</dl>
+
+<dl><dt>Args:</dt>
+<dd>threshold: Color threshold for bloom</dd>
+<dd>size: Blur radius of bloom effect (see Gaussian blur)</dd>
+<dd>offset: Growth/outline radius of bloom effect before blur</dd>
+<dd>alpha: Opacity of effect (default is 255, max opacity)</dd>
+</dl>
+
+<p>Post-processing effect that makes bright colors look like they're a strong
+light source, spreading their light additively to other nearby pixels. This is
+a complex effect that involves multiple shader passes. For both performance and
+visual reasons, it is usually best applied to an entire plane rather than to
+individual objects.
+
+<p>The color <tt>threshold</tt> determines which pixels this effect applies to.
+If any of the red, green, or blue components of the pixel are greater than the
+same component for the threshold, that pixel will bloom. The blooming pixels
+then have their colors spread outward to create a glow that gets added to the
+original image.
+
+<p>The <tt>offset</tt> and <tt>size</tt> parameters are used to control the
+glow effect. They work the same as they do in the drop shadow filter:
+<tt>offset</tt> causes the light to grow outwards, and a blur of <tt>size</tt>
+is then applied to soften it. Often just using a blur alone will produce a
+pleasing effect. By playing with these two values you can make the bloom effect
+appear differently.
+
+<p>The <tt>alpha</tt> value is applied to any light contributions from bloomed
+pixels that get added to the original image, so values lower than 255 can make
+the effect less pronounced. This can be very useful if you choose to animate
+the filter.
+
+<hr>
+
 <a name=/{notes}/filters/blur toc="Gaussian blur (filters)">
 <h2 byondver=512>Gaussian blur filter</h2>
 
@@ -25887,6 +26827,7 @@ passes for much higher sizes.
 <dl><dt><b>See also:</b>
 <dd><a href=#/atom/var/color>color var (atom)</a>
 <dd><a href=#/{notes}/color-matrix>Color matrix</a>
+<dd><a href=#/{{appendix}}/color-space>Color space</a>
 </dl>
 
 <dl><dt>Format:</dt>
@@ -25900,30 +26841,8 @@ passes for much higher sizes.
 
 <p>Applies a color matrix to this image. Unlike with the atom.color var, you
 can apply color conversions other than the regular RGBA color space, depending
-on the value of <tt>space</tt>.
-
-<dl class=codedt>
-<dt>FILTER_COLOR_RGB</dt>
-<dd>RGB color space (the default): red, green, blue.</dd>
-<dt>FILTER_COLOR_HSV</dt>
-<dd>HSV color space: hue, saturation, value. Hue goes from 0 to 1 and
-represents hues from red, green, blue, and back to red. Value is the maximum
-red, green, or blue. Saturation is how colorful this color is: 1 means the
-color has no amount of "gray" or white in it; lowering saturation makes the
-color lighter and grayer. A pure hue has both saturation and value of 1, whereas
-white has a saturation of 0 and value of 1.</dd>
-<dt>FILTER_COLOR_HSL</dt>
-<dd>HSL color space: hue, saturation, lightness. Lightness is the average of
-the min and max red, green, or blue values. A pure hue has lightness of 0.5
-and saturation of 1. Lightness values more than 0.5 approach white, and values
-below 0.5 approach black. Saturation is interpreted a little differently than
-in HSV space, where approaching white lowers the saturation; here it doesn't.</dd>
-<dt>FILTER_COLOR_HCY</dt>
-<dd>HCY color space: hue, chroma, luminance. This is somewhat similar to HSL,
-where chroma is sort of like saturation. Luminance is the apparent lightness
-of this color in grayscale, so reducing chroma to 0 will change the color to
-a gray that looks just about as bright to the human eye.</dd>
-</dl>
+on the value of <tt>space</tt>. See <a href="/{{appendix}}/color-space">Color
+space</a> for more information.
 
 <hr>
 
@@ -26287,6 +27206,38 @@ have the same <tt>WAVE_BOUNDED</tt> flags.
 
 <hr>
 
+<a name=/{notes}/generators toc="Generators">
+<h2 byondver=514>Generators</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/{notes}/particles>Particle effects</a>
+<dd><a href=#/proc/generator>generator proc</a>
+<dd><a href=#/atom/var/color>color var (atom)</a>
+<dd><a href=#/{notes}/color-matrix>Color matrix</a>
+</dl>
+
+<p>A generator is an object that can produce a random number, vector (list of 3 numbers), color (as a text string), or color matrix (list of 20 numbers) in a specified range according to rules you set down. It is used primarily for particle effects, since it can run on the client.
+
+<p>There are several types of generators:
+
+<ul>
+<li><b>Numbers:</b> Generate a random real number.</li>
+<li><b>Vectors:</b> Generate a random vector.</li>
+<li><b>Shapes:</b> Generate a random vector within a specific shaped region.</li>
+<li><b>Colors:</b> Generate a random color or color matrix.</li>
+</ul>
+
+<p>Generators can also be chained together with math operators and some procs. The second value can be a regular value instead of a geenrator, so for instance you can multiply a vector by 2, or by a matrix to transform it.
+
+<table class=codefirst>
+<tr><th>Operators</th><th>Action</th></tr>
+<tr><td>+ - * /</td><td>Arithmetic operators. You can multiply a 3D vector by a color matrix (where red,green,blue in the matrix correspond to x,y,z) to do a 3D transform, or by a 2D matrix for a 2D transform.</td></tr>
+<tr><td>- (unary)</td><td>Negate the value, same as multiplying by -1.</td></tr>
+<tr><td>turn(), generator.Turn()</td><td>Rotate a vector clockwise in the XY plane.</td></tr>
+</table>
+
+<hr>
+
 <a name=/{notes}/gliding toc="Gliding">
 <h2>Gliding</h2>
 
@@ -26302,13 +27253,15 @@ have the same <tt>WAVE_BOUNDED</tt> flags.
 <dd><a href=#/atom/movable/var/step_size>step_size var (movable atom)</a>
 <dd><a href=#/atom/movable/var/step_x>step_x var (movable atom)</a>
 <dd><a href=#/atom/movable/var/step_y>step_y var (movable atom)</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
 <dd><a href=#/client/var/fps>fps var (client)</a>
 </dl>
 
 <p>Gliding is a "glitz" effect applied by BYOND to cover up the visual sins
 of tile-based movement, by making objects and the map appear to move smoothly
-from one tile to another instead of immediately jumping. Because pixel
-movement is now an option, it is usually preferred over gliding.
+from one tile to another instead of immediately jumping. It is also available to
+smooth over small jumps in pixel movement that might occur, for instance if the
+client FPS is set higher than the server's.
 
 <p>To control the gliding speed of an atom, set <code>glide_size</code> to the
 value of your choice. If this is not set, the client will attempt to adjust
@@ -26316,17 +27269,25 @@ the speed manually.  <code>glide_size</code> is measured in server ticks, so
 if <code>client.fps</code> is set to a value greater than <code>world.fps</code>,
 it will be scaled appropriately.
 
-<p>The animate_movement var can be used to control the way in which an object
-glides, or suppress gliding altogether.
+<p>Whether an object glides or jumps is based on how far it moves relative to
+its <tt>step_size</tt> value, which by default is a full tile width. If the
+movement goes too far past <tt>step_size</tt> in the X or Y directions, it's
+no longer a glide.
 
-<p>By using the LONG_GLIDE flag in appearance_flags, a diagonal glide will
-take just as long as a cardinal-direction glide by moving a full glide_size
-pixels in the dominant X or Y direction. Otherwise, gliding tries to move by
-that many pixels in strict Euclidean distance (a straight line) and diagonal
-glides take longer.
+<p>The <tt>animate_movement</tt> var can be used to control the way in which
+an object glides, or suppress gliding altogether.
 
-<p>Because gliding interferes with pixel movement, gliding is turned off if
-you set any of the bound or step vars for an atom to a non-default value.
+<p>By using the <tt>LONG_GLIDE</tt> flag in appearance_flags, a diagonal glide
+will take just as long as a cardinal-direction glide by moving a full
+<tt>glide_size</tt> pixels in the dominant X or Y direction. Otherwise,
+gliding tries to move by that many pixels in strict Euclidean distance (a
+straight line) and diagonal glides take longer.
+
+<p class=note>In <a class=code href=#/world/var/movement_mode>LEGACY_MOVEMENT_MODE</a>,
+gliding is turned off if you set any of the bound or step vars for an atom to
+a non-default value. The only gliding that occurs in this case is when
+client.fps is higher than world.fps. All other movement modes base gliding on
+an atom's <tt>glide_size</tt> value.
 
 <hr>
 
@@ -26579,6 +27540,115 @@ is exactly 24 bits.
 
 <hr>
 
+<a name=/{notes}/particles toc="Particle effects">
+<h2 byondver=514>Particle effects</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/atom/movable/particles>particles (movable atom var)</a>
+<dd><a href=#/{notes}/generators>Generators</a>
+<dd><a href=#/proc/generator>generator proc</a>
+<dd><a href=#/{notes}/projection-matrix>Projection matrix</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
+</dl>
+
+<p>A particle set is a special effect, whose computations are handled entirely
+on the client, that spawns and tracks multiple pixels or icons with a
+temporary lifespan. Examples of this might be confetti, sparks, rocket
+exhaust, or rain or snow. Particles are rendered on a special surface and that
+gets attached to an obj or a mob like an overlay.
+
+<p>Particles can exist in 3 dimensions instead of the usual 2, so a particle's
+position, velocity, and other values may have a z coordinate. To make use of
+this z coordinate, you can use a <a href=#/{notes}/projection-matrix>projection
+matrix</a>. (The value of the z coordinate must be between -100 and
+100 after projection. Otherwise it's not guaranteed the particle will be
+displayed.)
+
+<p>To create a particle set, use <tt>new</tt> to create a new
+<tt>/particle</tt> datum, and then you can set the datum's vars. The vars can
+be set to constant values, or generator functions that will allow the client
+to choose from a range of values when spawning those particles. (The easiest
+way to handle this is to create your own type that inherits from
+<tt>/particle</tt>, and set up the parameters you'll want at compile-time.)
+
+<p>After the datum is created, it can be assigned to an obj or mob using their
+<tt>particles</tt> var. The particles will appear on the map wherever that obj
+or mob appears.
+
+<h3>Example:</h3>
+<xmp>
+particle/snow
+    width = 500     // 500 x 500 image to cover a moderately sized map
+    height = 500
+    count = 2500    // 2500 particles
+    spawning = 3    // 3 new particles per client tick
+    bound1 = list(-1000, -300, -1000)   // end particles at Y=-300
+    lifespan = 600  // last 600 client ticks max
+    fade = 50       // fade out over the last 50 ticks if still on screen
+    // spawn within a certain x,y,z space
+    position = generator("box", list(-300,250,0), list(300,300,100))
+    // control how the snow falls
+    gravity = list(0, -3.2)
+    friction = 0.2  // shed 20% of velocity and drift every client tick
+    drift = generator("sphere", 0, 2)
+obj/snow
+    screen_loc = "CENTER"
+    particles = new/particle/snow
+
+mob
+    proc/CreateSnow()
+        client?.screen += new/obj/snow
+</xmp>
+
+<p>These are the vars that can be used in a particle set.
+
+<table class=codefirst>
+<tr><th colspan=3>Particle vars that affect the entire set (generators are not allowed for these)</th></tr>
+<tr><th>Var</th><th>Type</th><th>Description</th></tr>
+<tr><td>width</td><td rowspan=2>num</td><td rowspan=2>Size of particle image in pixels</td></tr>
+<tr><td>height</td></tr>
+<tr><td>count</td><td>num</td><td>Maximum particle count</td></tr>
+<tr><td>spawning</td><td>num</td><td>Number of particles to spawn per client tick</td></tr>
+<tr><td>bound1</td><td>vector</td><td>Minimum particle position in x,y,z space; defaults to list(-1000,-1000,-1000)</td></tr>
+<tr><td>bound2</td><td>vector</td><td>Maximum particle position in x,y,z space; defaults to list(1000,1000,1000)</td></tr>
+<tr><td>gravity</td><td>vector</td><td>Constant acceleration applied to all particles in this set (pixels per squared client tick)</td></tr>
+<tr><td>gradient</td><td><a href=#/{notes}/color-gradient>color gradient</a></td><td>Color gradient used, if any</td></tr>
+<tr><td>transform</td><td><a href=#/{notes}/projection-matrix>matrix</a></td><td>Transform done to all particles, if any (can be higher than 2D)</td></tr>
+<tr><th colspan=3>Vars that apply when a particle spawns</th></tr>
+<tr><td>lifespan</td><td>num</td><td>Maximum life of the particle, in client ticks</td></tr>
+<tr><td>fade</td><td>num</td><td>Fade-out time at end of lifespan, in client ticks</td></tr>
+<tr><td>icon</td><td>icon</td><td>Icon to use, if any; no icon means this particle will be a dot<br/>Can be assigned a weighted list of icon files, to choose an icon at random</td></tr>
+<tr><td>icon_state</td><td>text</td><td>Icon state to use, if any<br/>Can be assigned a weighted list of strings, to choose an icon at random</td></tr>
+<tr><td>color</td><td>num or color</td><td>Particle color; can be a number if a gradient is used</td></tr>
+<tr><td>color_change</td><td>num</td><td>Color change per tick; only applies if gradient is used</td></tr>
+<tr><td>position</td><td>num</td><td>x,y,z position, from center in pixels</td></tr>
+<tr><td>velocity</td><td>num</td><td>x,y,z velocity, in pixels</td></tr>
+<tr><td>scale</td><td>vector (2D)</td><td>Scale applied to icon, if used; defaults to list(1,1)</td></tr>
+<tr><td>rotation</td><td>num</td><td>Angle of rotation (clockwise); applies only if using an icon</td></tr>
+<tr><td>spin</td><td>num</td><td>Change in rotation per tick</td></tr>
+<tr><td>friction</td><td>num</td><td>Amount of velocity to shed (0 to 1) per client tick, also applied to acceleration from drift</td></tr>
+<tr><th colspan=3>Vars that are evalulated every tick</th></tr>
+<tr><td>drift</td><td>vector</td><td>Added acceleration every tick; e.g. a circle or sphere generator can be applied to produce snow or ember effects</td></tr>
+</table>
+
+<p>The <tt>icon</tt> and <tt>icon_state</tt> values are special in that they can't be assigned a generator, but they can be assigned a constant icon or string, respectively, or a list of possible values to choose from like so:
+
+<xmp>icon = list('confetti.dmi'=5, 'coin.dmi'=1)</xmp>
+
+<p>The list used can either be a simple list, or it can contain weights as shown above.
+
+<p>Changing a var on a particle datum will make changes to future particles.
+For instance, you can set the datum's <tt>spawning</tt> var to 0 to make it
+stop creating new particles. (Note: If you are changing a vector or color
+matrix, such as <tt>gravity</tt>, you need to assign a new value. You can't
+for instance set <tt>particles.gravity[2] = 0</tt> because it won't do
+anything to update the particle stream.)
+
+<p>The same particle datum can be assigned to more than one movable atom.
+However the particles displayed by each atom will be different.
+
+<hr>
+
 <a name=/{notes}/pixel-movement toc="Pixel movement">
 <h2 byondver=490>Pixel movement</h2>
 
@@ -26601,6 +27671,8 @@ is exactly 24 bits.
 <dd><a href=#/atom/proc/Crossed>Crossed proc (atom)</a>
 <dd><a href=#/atom/proc/Uncross>Uncross proc (atom)</a>
 <dd><a href=#/atom/proc/Uncrossed>Uncrossed proc (atom)</a>
+<dd><a href=#/world/var/movement_mode>movement_mode var (world)</a>
+<dd><a href=#/atom/var/appearance_flags>appearance_flags var (atom)</a>
 <dd><i>Other topics</i>
 <dd><a href=#/proc/bounds>bounds proc</a>
 <dd><a href=#/proc/bounds_dist>bounds_dist proc</a>
@@ -26626,6 +27698,15 @@ movement speed and offset it from the corner of the tile it's standing on.
 <li>step_y: y offset from the corner of loc</li></ul>
 
 <p>Those are for movable atoms only; they do not apply to turfs.
+
+<p>If <a class=code href=#/world/var/movement_mode>world.movement_mode</a>
+is set to <tt>TILED_MOVEMENT_MODE</tt>, all movable atoms must be aligned
+to the tile grid: their step_x/y/size values must be multiples of the icon
+size, and their bounds must also land on tile boundaries although the atom
+can be bigger than one tile. In other movement modes you can specify that
+only specific atoms use this behavior, by giving them the
+<a class=code href=#/atom/var/appearance_flags>TILE_MOVER</a> appearance
+flag.
 
 <h3>Bounding boxes</h3>
 
@@ -26674,20 +27755,23 @@ mover's regular step_size is considered a jump. Changing z levels is also a
 jump, as is moving to/from a non-turf.
 
 <p>If step_x and step_y aren't within a good range, the new loc and the
-step_x/y values may be changed. The goal of Move() is for the southwest
-corner of the mover's bounding box to be standing on loc.
+step_x/y values may be changed so that the southwest corner of the mover's
+bounding box is standing on its actual loc, or as close to it as possible.
 
 <p>Enter() and Exit() can be called for several turfs and/or areas, not
-just one at a time. It is also possible for them not to be called at all.
-They are only called when first attempting to enter or (fully) exit. The
-behavior of Enter() has also been changed; whereas in the past, it looked
-at the density of itself and its contents, it will now only look at
-contents that fully envelop that turf. This is because it is possible for an
-atom to be standing only partly on a turf, without fully blocking it.
+just one at a time. It is also possible for them not to be called at all,
+if the moving atom moves within a turf but doesn't cross a new turf
+boundary. Enter() and Exit() are only called when first attempting to enter
+or fully exit. The behavior of these procs depends on
+<a class=code href=#/world/var/movement_mode>world.movement_mode</a>; in
+legacy mode, they look at some of the contents of the turfs as well as the
+turfs themselves, to preserve behavior found in older BYOND versions.
 
-<p>To handle collisions between two movables, a new family of procs has been
-added: Cross() and Uncross() are the equivalent of Enter() and Exit(), and
-Crossed() and Uncrossed() are like Entered() and Exited().
+<p>Cross() and Uncross() are the equivalent of Enter() and Exit() but apply
+to objects the mover will either overlap or stop overlapping. (For turfs,
+Enter() and Exit() call these procs by default, since the mover is both
+stepping <i>into</i> and <i>onto</i> a turf.) Likewise Crossed() and
+Uncrossed() are the equivalents of Entered() and Exited().
 
 <p>If an atom is sliding, its movement can be halted if it encounters an
 obstacle partway along its route. Bump() will still be called for any
@@ -26996,6 +28080,7 @@ special layer like <tt>BACKGROUND_LAYER</tt>.
 <dd><a href=#/world/var/map_format>map_format var (world)</a>
 <dd><a href=#/{notes}/BACKGROUND_LAYER>BACKGROUND_LAYER</a>
 <dd><a href=#/{notes}/EFFECTS_LAYER>EFFECTS_LAYER</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
 </dl>
 
 <p>TOPDOWN_LAYER is a special high value that can be added to the regular layer
@@ -27192,21 +28277,38 @@ semicolon. (A semicolon indicates the conditional expression is over.)
 etc.) have a special syntax that allows you to include information that would
 normally require a winget call. By including <tt>[[<i>something</i>]]</tt> in
 the command, the double-bracketed text will be replaced by the result of
-running a winget on that parameter. If it's surrounded by double quotes
-(<tt>"</tt>), the result will also be escaped so line breaks turn into
-<tt>\n</tt>, other double quotes turn into <tt>\"</tt>, and so on.
+running a winget on that parameter.
 
 <p>A value of <tt>[[id.parameter]]</tt> will run a winget on the control with
 the given ID. Just using <tt>[[parameter]]</tt> will run a winget for the
 control that initiated this command. You can also use <tt>parent</tt> in place
 of the ID to do something with the parent of the control, or <tt>parent.id</tt>
-for access to a sibling control.
+for access to a sibling control. Position and size parameters can be further
+broken down by appending <tt>.x</tt> or <tt>.y</tt> to get at the numbers
+directly.
 
 <p>Several commands already support some special cases like <tt>[[*]]</tt> or
 <tt>[[width]]</tt> or such, where the special-case values are relevant to the
 command. An example is that in <tt>on-size</tt> the value of <tt>[[*]]</tt> is
-a size string. Some macros, like the Any macro or some gamepad macros, also
-support this syntax for special cases (but not for embedded wingets).
+a size value. The Any macro, gamepad macros, and mouse macros, also support this
+syntax; see <a href=#/{skin}/macros>macros</a> for more info.
+
+<p>You can choose how embedded wingets get formatted by following the value with
+<tt>as</tt> and a type, such as <tt>[[window.size as string]]</tt>. There are
+several types you can use, and different types of parameters get formatted differently:
+
+<dl class="codedt">
+<dt>arg</dt><dd>Value is formatted as if it's an argument on a command line. Numbers are left alone; booleans are 0 or 1; size and position have their X and Y values separated by a space; pretty much everything else is DM-escaped and enclosed in quotes.</dd>
+<dt>escaped</dt><dd>DM-escape the value as if it's in a quoted string but do not include the quotes. Size and position values both use <tt>,</tt> to separate their X and Y values.</dd>
+<dt>string</dt><dd>Value is formatted as a DM-escaped string with surrounding quotes.</dd>
+<dt>params</dt><dd>Format value for a URL-encoded parameter list (see <a class=code href=#/proc/list2params>list2params</a>), escaping characters as needed.</dd>
+<dt>json</dt><dd>JSON formatting. Numbers are left unchanged; size or position values are turned into objects with x and y items; boolean values are <tt>true</tt> or <tt>false</tt>.</dd>
+<dt>json-dm</dt><dd>JSON formatting, but DM-escaped so it can be included in a quoted string. Quotes are not included.</dd>
+</dl>
+
+<p>The <tt>arg</tt> type is the default, unless the <tt>[[</tt><i>...</i><tt>]]</tt>
+expression has double quotes on both sides, in which case <tt>escaped</tt> is the
+default.
 
 <hr>
 
@@ -27223,7 +28325,7 @@ support this syntax for special cases (but not for embedded wingets).
 <dd><a href=#/{skin}/control/input>Input</a>: Command input or other user-entered text
 <dd><a href=#/{skin}/control/label>Label</a>: Non-interactive text label
 <dd><a href=#/{skin}/control/main>Main</a>: A window or pane that holds other controls
-<dd><a href=#/{skin}/control/macro>Macro</a>: A <a href=#/{skin}/macros>keyboard/gamepad macro</a>
+<dd><a href=#/{skin}/control/macro>Macro</a>: A <a href=#/{skin}/macros>keyboard/gamepad/mouse macro</a>
 <dd><a href=#/{skin}/control/map>Map</a>: The game map display
 <dd><a href=#/{skin}/control/menu>Menu</a>: An item in a drop-down menu
 <dd><a href=#/{skin}/control/output>Output</a>: Text output
@@ -27528,7 +28630,7 @@ output apply here.
 <a name=/{skin}/control/macro>
 <h2>macro control (skin)</h2>
 
-<p>A <a href=#/{skin}/macros>keyboard/gamepad macro</a>, usually designed to run a <a href=#/{skin}/commands>command</a>. The control is a means of interacting with the macro as an object, allowing some of its properties to be changed at runtime.
+<p>A <a href=#/{skin}/macros>keyboard/gamepad/mouse macro</a>, usually designed to run a <a href=#/{skin}/commands>command</a>. The control is a means of interacting with the macro as an object, allowing some of its properties to be changed at runtime.
 
 <dl class=codedd><dt><b>Macro-specific parameters:</b>
 <dd><a href=#/{skin}/param/command>command</a>
@@ -27720,6 +28822,62 @@ configuration, so it will not, for instance, know that button 0 should be
 <tt>GamepadFace1</tt>. See below for more information on how to use this
 macro.
 
+<h3 byondver=514>Mouse macros</h3>
+
+<p>You can add macros (not local player-defined ones) for any of the mouse
+input commands, thereby bypassing the normal mouse verbs. This can be helpful
+for designing custom setups where you don't want to have to parse the normal
+parameter string that provides most of the info, and instead want to provide
+data directly to the verb. You will want <tt>set instant=1</tt> on any such
+verb.
+
+<p>Mouse macro commands use the <tt>[[...]]</tt> syntax to embed values, just
+like <a href=#/{skin}/commands>embedded wingets</a>. These are the values you
+can include in a mouse macro:
+
+<table class="macro_info" cellspacing=0 cellpadding=3>
+<tr><th>Embedded keyword</th><th>Meaning</th></tr>
+<tr><td><tt>action</tt></td><td>Name of the mouse action (e.g. MouseDown, MouseMove, etc.).</td></tr>
+<tr><td><tt>src</tt></td><td>Object the mouse is touching, or dragging/dropping.</td></tr>
+<tr><td><tt>loc</tt></td><td>Turf or statpanel that <tt>src</tt> is over; in a drag-drop you should split this into <tt>src.loc</tt> and <tt>over.loc</tt>.</td></tr>
+<tr><td><tt>button</tt></td><td>Mouse button used for this action, if any: <tt>left</tt>, <tt>middle</tt>, or <tt>right</tt>.</td></tr>
+<tr><td><tt>drag</tt></td><td>Mouse button currently used for dragging.</td></tr>
+<tr><td><tt>buttons</tt></td><td>Mouse buttons currently down or involved in this action, separated by commas.</td></tr>
+<tr><td><tt>keys</tt></td><td>Modifier keys currently held (<tt>shift</tt>, <tt>ctrl</tt>, <tt>alt</tt>), separated by commas.</td></tr>
+<tr><td><tt>over</tt></td><td>Object the mouse is over in a drag/drop operation.</td></tr>
+<tr><td><tt>id</tt></td><td>Control ID; in a drag-drop you should split this into <tt>src.id</tt> and <tt>over.id</tt>.</td></tr>
+<tr><td><tt>icon</tt></td><td>The icon offset (starting from 1,1 at the lower left) where the mouse action occurred.<sup>*</sup></td></tr>
+<tr><td><tt>tile</tt></td><td>The tile where the mouse action occurred, if relevant.<sup>*</sup></td></tr>
+<tr><td><tt>vis</tt></td><td>Pixel coordinates relative to the icon's position on screen (same as <tt>icon</tt> but without taking transform into account).<sup>*</sup></td></tr>
+<tr><td><tt>screen_loc</tt></td><td>The regular <tt>screen_loc</tt> cordinate string.<sup>*</sup></td></tr>
+<tr><td><tt>screen</tt></td><td><tt>screen_loc</tt> coordinates but entirely in pixels starting at 0,0 from lower left.<sup>*</sup></td></tr>
+<tr><td><tt>screen_tile</tt></td><td><tt>screen_loc</tt> coordinates but only the tile number starting at 1,1.<sup>*</sup></td></tr>
+<tr><td><tt>screen_offset</tt></td><td><tt>screen_loc</tt> coordinates but only the pixel offset from the tile, starting at 0,0.<sup>*</sup></td></tr>
+<tr><td><tt>delta</tt></td><td>Wheel changes in a mouse wheel command.<sup>*</sup></td></tr>
+<tr><td><tt>left</tt>, <tt>right</tt>, <tt>middle</tt></td><td>1 if this button is down or involved in this action, 0 otherwise</td></tr>
+<tr><td><tt>shift</tt>, <tt>ctrl</tt>, <tt>alt</tt></td><td>1 if this modifier key is held, 0 otherwise</td></tr>
+<tr><td><tt>link</tt></td><td>1 if the mouse is over a maptext link, 0 otherwise</td></tr>
+<tr><td colspan=2><sup>*</sup> Coordinate values are comma-separated, but you can follow them with <tt>.x</tt> or <tt>.y</tt> to get the individual X and Y numbers.</td></tr>
+</table>
+
+<p>An example mouse macro command might look like this:
+
+<blockquote><pre>my-mousedown-verb [[src]] [[button]] "keys=[[keys as params]];drag=[[drag as params]]"</pre></blockquote>
+
+<p>In the example, the <tt>src</tt> value is a reference such as you would get
+with the <a href=#/proc/ref><tt>ref()</tt> proc</a>. It can be used as a verb
+argument directly and won't be enclosed by quotes by default. The <tt>button</tt>
+value is a string and the default formatting will put quotes around it. The
+<tt>keys</tt> and <tt>drag</tt> values were given the <tt>as params</tt> format
+specifier so they would behave as part of a <a href=#/proc/list2params>parameter
+list</a>.
+
+<p>In drag/drop actions, you can precede any value with <tt>src</tt> or
+<tt>over</tt> if there may be different information for the dragged object and
+the mouseover object/location. This also applies to things like <tt>keys</tt>,
+which by default will be the currently held keys but you can use <tt>src.keys</tt>
+to refer to the values from when the drag began.
+
 <h3>Available macros</h3>
 
 <p>This is a list of all keys and gamepad events that can be used in macros.
@@ -27730,11 +28888,11 @@ macro.
     <tr><th>Modifier</th><th>Meaning</th></tr>
   </thead>
   <tbody>
-  <tr><td>SHIFT+</td><td>This macro only counts if either Shift key is pressed.</td></tr>
-  <tr><td>CTRL+</td><td>This macro only counts if either Ctrl key is pressed.</td></tr>
-  <tr><td>ALT+</td><td>This macro only counts if either Alt key is pressed.</td></tr>
-  <tr><td>+REP</td><td>If a key/button is held down, this macro repeats.</td></tr>
-  <tr><td>+UP</td><td>This macro fires when the key/button is released.</td></tr>
+  <tr><td><tt>SHIFT+</tt></td><td>This macro only counts if either Shift key is pressed.</td></tr>
+  <tr><td><tt>CTRL+</tt></td><td>This macro only counts if either Ctrl key is pressed.</td></tr>
+  <tr><td><tt>ALT+</tt></td><td>This macro only counts if either Alt key is pressed.</td></tr>
+  <tr><td><tt>+REP</tt></td><td>If a key/button is held down, this macro repeats.</td></tr>
+  <tr><td><tt>+UP</tt></td><td>This macro fires when the key/button is released.</td></tr>
   </tbody>
 
   <thead>
@@ -27774,6 +28932,13 @@ macro.
     <tr><td><tt>Shift</tt></td><td>Shift key (when not used as a modifier)</td></tr>
     <tr><td><tt>Ctrl</tt></td><td>Ctrl key (when not used as a modifier)</td></tr>
     <tr><td><tt>Alt</tt></td><td>Alt key (when not used as a modifier)</td></tr>
+    <tr><td><tt>VolumeMute</tt></td><td>Mute key</td></tr>
+    <tr><td><tt>VolumeUp</tt></td><td>Volume up key</td></tr>
+    <tr><td><tt>VolumeDown</tt></td><td>Volume down key</td></tr>
+    <tr><td><tt>MediaPlayPause</tt></td><td>Play/pause media key</td></tr>
+    <tr><td><tt>MediaStop</tt></td><td>Stop media key</td></tr>
+    <tr><td><tt>MediaNext</tt></td><td>Next track key</td></tr>
+    <tr><td><tt>MediaPrev</tt></td><td>Previous track key</td></tr>
   </tbody>
 
   <thead>
@@ -27829,20 +28994,33 @@ macro.
   <tbody>
     <tr><td><tt>GamepadDir</tt></td><td>Dpad, converted to one of the eight standard directions.</td></tr>
     <tr><td><tt>GamepadDir4</tt></td><td>Dpad, converted to a cardinal direction.</td></tr>
+    <tr><td colspan=2 class="macro_foot">
+      <p><sup>&dagger;</sup> All of the gamepad macros defined above apply to the first gamepad. BYOND can now support up to four gamepads, and you can replace Gamepad in the names above with Gamepad2, Gamepad3, or Gamepad4 to access them. Each gamepad also has its own raw macro (i.e., Gamepad2Raw).</p>
+      <p><sup>&Dagger;</sup> If you use a Dpad macro like GamepadDir as a <tt>map-to</tt> target, you don't have to specify gamepad 2-4 in map-to; the mapping will automatically know that when Gamepad2LeftAnalog is mapped to GamepadDir, it means Gamepad2Dir.</p>
+    </td></tr>
   </tbody>
 
   <thead>
-    <tr><td class="macro_head" colspan=2><b>Mouse</b> "macros" can only be used as mapping targets for another macro.</td></tr>
+    <tr><td class="macro_head" colspan=2 byondver=514><b>Mouse macros</b> can have commands but not be used as mapping targets.</td></tr>
+  </thead>
+  <tbody>
+    <tr><td><tt>MouseDown</tt></td><td>Mouse button pressed (replaces MouseDown verb)</td></tr>
+    <tr><td><tt>MouseUp</tt></td><td>Mouse button released (replaces MouseUp verb)</td></tr>
+    <tr><td><tt>MouseOver</tt></td><td>Mouse has moved over a new icon or entered/exited a control (replaces MouseEntered and MouseExited verbs)</td></tr>
+    <tr><td><tt>MouseMove</tt></td><td>Mouse has moved to a new pixel of the same icon (replaces MouseMove verb)</td></tr>
+    <tr><td><tt>MouseDrag</tt></td><td>Mouse has begin dragging or is over a new drop target (replaces MouseDrag verb)</td></tr>
+    <tr><td><tt>MouseDragMove</tt></td><td>Mouse is dragging and is over a new pixel of the same drop target (replaces MouseDrag verb in situations where MouseMove would apply)</td></tr>
+    <tr><td><tt>MouseDrop</tt></td><td>Mouse drag has been released over a target (replaces MouseDrop verb)</td></tr>
+  </tbody>
+
+  <thead>
+    <tr><td class="macro_head" colspan=2><b>Mouse targets</b> can only be used as mapping targets for another macro.</td></tr>
   </thead>
   <tbody>
     <tr><td><tt>Mouse</tt></td><td>The mouse cursor, mappable by a gamepad analog stick.</td></tr>
     <tr><td><tt>MouseLeftButton</tt></td><td>Left button, mappable by a gamepad button.</td></tr>
     <tr><td><tt>MouseRightButton</tt></td><td>Right button, mappable by a gamepad button.</td></tr>
     <tr><td><tt>MouseMiddleButton</tt></td><td>Middle button, mappable by a gamepad button.</td></tr>
-    <tr><td colspan=2 class="macro_foot">
-      <p><sup>&dagger;</sup> All of the gamepad macros defined above apply to the first gamepad. BYOND can now support up to four gamepads, and you can replace Gamepad in the names above with Gamepad2, Gamepad3, or Gamepad4 to access them. Each gamepad also has its own raw macro (i.e., Gamepad2Raw).</p>
-      <p><sup>&Dagger;</sup> If you use a Dpad macro like GamepadDir as a <tt>map-to</tt> target, you don't have to specify gamepad 2-4 in map-to; the mapping will automatically know that when Gamepad2LeftAnalog is mapped to GamepadDir, it means Gamepad2Dir.</p>
-    </td></tr>
   </tbody>
 
 </table>
@@ -30460,6 +31638,10 @@ var/list/extra_resources = list(\
 <dd><a href=#/{skin}/param/letterbox>letterbox parameter</a>
 <dd><a href=#/{skin}/param/zoom>zoom parameter</a>
 <dd><a href=#/{skin}/param/zoom-mode>zoom-mode parameter</a>
+<dd><a href=#/world/var/icon_size>icon_size var (world)</a>
+<dd><a href=#/world/var/view>view var (world)</a>
+<dd><a href=#/client/var/view>view var (client)</a>
+<dd><a href=#/{notes}/HUD>HUD / screen objects</a>
 </dl>
 
 <dl><dt><b>Applies to:</b>
@@ -30470,7 +31652,11 @@ var/list/extra_resources = list(\
 <dd><i>width</i>x<i>height</i>
 </dl>
 
-<p>The size, in pixels, of the area that this map is using (or trying to use) for display, not including any letterboxing. This value may be bigger than the actual map control's size.
+<p>The size, in pixels, of the map after <tt>zoom</tt> has been applied.
+
+<p>For instance, if the client view has 10&times;10 tiles (this includes any extended tiles caused by HUD objects) and <tt>world.icon_size</tt> is 32x32, the map has a native size of 320&times;320 pixels. If the map has a zoom level of 2, then <tt>view-size</tt> will be 640x640.
+
+<p>With a <tt>zoom</tt> value of 0, which is the default for most projects, the actual zoom level is automatically determined by the size of the map control, the map's native pixel size as explained above, and the value of the <a class=code href=#/{skin}/param/letterbox>letterbox</a> parameter.
 
 <hr>
 
@@ -30588,6 +31774,13 @@ var/list/extra_resources = list(\
 <p>This section contains miscellaneous information that may apply to multiple
 vars or procs.
 
+<dl>
+<dd><a href=#/{{appendix}}/css group="text,map,output">CSS attributes</a>
+<dd><a href=#/{{appendix}}/html-colors group="text,map,output">HTML colors</a>
+<dd><a href=#/{{appendix}}/color-space group="effects">Color space</a>
+<dd><a href=#/{{appendix}}/stddef.dm>stddef.dm file</a>
+</dl>
+
 <hr>
 
 <a name=/{{appendix}}/css toc="CSS attributes">
@@ -30648,6 +31841,10 @@ the text color.
 <a name=/{{appendix}}/html-colors toc="HTML colors">
 <h2>HTML colors</h2>
 
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/rgb>rgb proc</a>
+</dl>
+
 <p>Text colors may be specified by name or RGB value. The RGB color format
 uses hexadecimal numbers, with 2 hex digits each for red, green, and blue.
 These range from 0 (00 in hex) to 255 (FF in hex). In certain situations
@@ -30688,6 +31885,100 @@ are listed in the following table:
 <tr><td>aqua <i>or</i>
         cyan</td>    <td>#00FFFF</td> <td style="background:#00FFFF"></td></tr>
 </table>
+
+<hr>
+
+<a name=/{{appendix}}/color-space toc="Color space">
+<h2>Color space</h2>
+
+<dl><dt><b>See also:</b>
+<dd><a href=#/proc/rgb>rgb proc</a>
+<dd><a href=#/proc/rgb2num>rgb2num proc</a>
+<dd><a href=#/proc/gradient>gradient proc</a>
+<dd><a href=#/proc/animate>animate proc</a>
+<dd><a href=#/{notes}/color-gradient>Color gradient</a>
+<dd><a href=#/{notes}/filters/color>Color matrix filter</a>
+</dl>
+
+<p>There are different ways of interpreting color besides RGB. Several parts of
+BYOND are capable of using other color spaces.
+
+<h3 class=code>COLORSPACE_RGB</h3>
+
+<p>The default color space is RGB, where each color is split into red, green,
+and blue components, as well as an optional alpha. All of these components range
+from 0 to 255.
+
+<p>The color yellow for instance is <tt>rgb(255,255,0)</tt> which is red and
+green mixed together at their maximum brightness, but no blue component.
+
+<h3 class=code>COLORSPACE_HSV</h3>
+
+<img style="float:right" src="data:image/png;charset=utf-8;base64,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">
+
+<p>HSV stands for hue, saturation, and value.
+
+<ul>
+<li>Hue ranges from 0 to 360 on a color wheel, where 0 is red, 60 is yellow,
+120 is green, and so on as seen in the image.</li>
+<li>Saturation is how colorful this color is; it ranges from 0 which means a
+shade of gray, to 100 which is fully colored.</li>
+<li>Value is the brightness of the biggest red, green, or blue component, and
+ranges from 0 to 100. A value of 0 is always black.</li>
+</ul>
+
+<p>All pure hues such as red (hue=0) have a saturation of 100 and a value of
+100. As saturation decreases, the colors turns whiter. Lower values mean
+darker colors and darker shades of gray.
+
+<p>In HSV, saturation is less meaningful as value gets closer to 0. Black
+of course always has a value of 0. With 10 as the value, saturation=100 gives
+you a very dark color whereas saturation=0 is a 10% shade of gray.
+
+<h3 class=code>COLORSPACE_HSL</h3>
+
+<p>HSL is a little more intuitive than HSV. Here, the value is replaced by
+luminance, which again ranges from 0 to 100. Luminance is the average of the
+minimum and maximum values of the red, green, and blue components.
+
+<p>Black has a luminance of 0; white has a luminance of 100. Pure hues all
+have a saturation of 100 and luminance of 50. As saturation decreases, the
+color will approach a grayscale shade of L%.
+
+<p>Saturation is less meaningful the closer luminance is to 0 or 100. At a
+luminance of 100, the saturation is totally irrelevant. At 90, high saturation
+will get you a very light shade of the hue but that isn't very far off from a
+90% shade of gray.
+
+<h3 class=code>COLORSPACE_HCY</h3>
+
+<p>HCY stands for <b>hue</b>, <b>chroma</b>, and the Y is for grayscale
+luminance. (Again chroma and Y range from 0 to 100.) This color space is
+based around the apparent brightness of each color according to a rough
+approximation of human vision.
+
+<p>Chroma is similar to saturation in that it determines how far from
+grayscale the color is. As chroma decreases toward 0, the color approaches
+a grayscale shade of Y%. What's different about HCY color from HSV or HSL
+is that at chroma=0 and chroma=100 the colors should appear equally
+bright. Pue red, therefore, has a hue of 0, a chroma of 100, and a Y
+luminance of only 29.9&mdash;roughly what red would look like in black &amp;
+white with all the color leached out.
+
+<hr>
+
+<a name=/{{appendix}}/stddef.dm toc="stddef.dm file">
+<h2>stddef.dm file</h2>
+
+<p>This is a special file that's included in all projects when you compile.
+It contains various constants, definitions of some built-in datums, and so on.
+
+<p>You can see the contents of this file by creating a new file in Dream
+Maker called <tt>stddef.dm</tt>. It will automatically be filled with the
+standard definitions.
+
+<p>The contents of <tt>stddef.dm</tt> may change with new BYOND versions.
+However an eye is always kept on backwards-compatibility.
 
 <hr>
 
