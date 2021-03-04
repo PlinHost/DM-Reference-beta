@@ -16,6 +16,7 @@
 		try {
 			var contents = document.querySelector('#contents');
 			var ref = document.querySelector('#ref');
+			if(m.data.match(/^dark:/)) document.body.classList.toggle('dark',!!JSON.parse(m.data.substr(5)));
 			if(m.source == ref || m.source == ref.contentWindow) {
 				contents.contentWindow.postMessage(m.data, '*');
 				try {
@@ -27,11 +28,11 @@
 							catch(_) {window.location.hash = h;}
 						}
 					}
-					else if(m.data.match(/^search:/)) contents.contentWindow.postMessage(m.data,'*');
+					else if(m.data.match(/^(search|dark):/)) contents.contentWindow.postMessage(m.data,'*');
 				} catch(_){}
 			}
 			else if(m.source == contents || m.source == contents.contentWindow) {
-				if(m.data.match(/^search:/)) ref.contentWindow.postMessage(m.data, '*');
+				if(m.data.match(/^(search|dark):/)) ref.contentWindow.postMessage(m.data, '*');
 			}
 		} catch(_){console.log(_);}
 	});
@@ -43,21 +44,21 @@
 		var dragging, offset=0, shield, nextx;
 		var events={mousemove:move,touchmove:move,mouseup:stop,touchend:stop,touchcancel:stop};
 		function div() {return document.querySelector('#divider');}
-		function prev() {return document.querySelector('td.contents');}
+		function prev() {return document.querySelector('.contents');}
 		function start(e) {
 			if(dragging) return;
 			dragging = true;
 			offset = prev().offsetWidth - (e.touches?e.touches[0]:e).clientX;
-			var d = div();
+			var d=div(), ss;
 			for(var i in events) if(events.hasOwnProperty(i)) document.addEventListener(i,events[i],true);
 			d.classList.add('dragging');
 			document.body.appendChild(shield = document.createElement('div'));
 			shield.id = '_shield';
-			shield.style.zIndex=100;
-			shield.style.position='absolute';
-			shield.style.left=shield.style.top='0';
-			shield.style.width=shield.style.height='100%';
-			shield.style.cursor='ew-resize';
+			(ss=shield.style).zIndex=100;
+			ss.position='absolute';
+			ss.left=shield.style.top='0';
+			ss.width=shield.style.height='100%';
+			ss.cursor='ew-resize';
 		}
 		function domove() {
 			nextx = Math.max(20, Math.min(nextx, document.body.clientWidth-20));
@@ -87,21 +88,42 @@
 	})();
 	//--></script>
 	<style type="text/css">
+		* {box-sizing: border-box; transition: background-color 0.2s, border-color 0.2s;}
 		html, body {margin: 0px; padding: 0px; border: none; height: 100%;}
-		table {height:100%; width:100%; overflow: hidden;}
+		table {height:100%; width:100%; border-spacing: 0; overflow: hidden;}
 		td {padding: 0px; margin: 0px; border: none; height: 100%;}
-		td.contents {width: 300px;}
+		.contents {width: 300px; flex: 0 0 auto;}
 		td#divider {width: 3px; cursor: ew-resize; box-sizing: content-box; border-style: outset; border-color: #ccc; border-width: 0 1px 0 1px; background: #ccc; user-select: none; -webkit-user-select: none; -moz-user-select: none; -e-user-select: none;}
-		td#divider.dragging {background: #999; border-color: #999;}
+		td#divider.dragging {background: #999; border-color: #999; z-index: 2;}
+		body.dark td#divider {border-color: #555; background: #555;}
+		body.dark td#divider.dragging {box-shadow: 0 0 3px white;}
+
+		#_shield {z-index: 100; position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: ew-resize;}
+		#top {width: 100%; height: 100%; overflow: hidden; display: flex;}
+		#divider {flex: 0 0 auto; width: 5px; cursor: ew-resize; background: #ccc; border-left: 1px solid #eee; border-right: 1px solid #aaa; user-select: none; -webkit-user-select: none; -moz-user-select: none; -e-user-select: none;}
+		#divider.dragging {background: #999; border-left-color: #bbb; border-right-color: #777; z-index: 2;}
+		body.dark #divider {background: #555; border-left-color: #777; border-right-color: #333;}
+		body.dark #divider.dragging {background: #999; border-left-color: #bbb; border-right-color: #777;}
+		.info {flex: 1 1 auto;}
+
 		iframe {border: none; width: 100%; height: 100%;}
 	</style>
 </head>
 
+<!--
 <table><tr>
 <td class=contents><iframe id="contents" name="contents" src="contents.html"></iframe></td>
 <td id=divider></td>
 <td><iframe src="info.html" id="ref" name="ref" onload="hashchange()"></iframe></td>
 </tr></table>
+-->
+
+<div id=top>
+<div class=contents><iframe id="contents" name="contents" src="contents.html"></iframe></div>
+<div id=divider></div>
+<div class=info><iframe src="info.html" id="ref" name="ref" onload="hashchange()"></iframe></div>
+</div>
+
 <script>setupdrag();</script>
 
 </html>

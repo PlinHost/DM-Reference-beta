@@ -6,44 +6,64 @@
   <meta charset="utf-8">
   <style>
     <!--
-    * {box-sizing: border-box;}
+    * {box-sizing: border-box; transition: color 0.2s, background-color 0.2s, border-color 0.2s;}
     body {font: 11pt 'Segoe UI',Verdana,Arial,Helvetica,sans-serif; background: white; color: black; padding: 0; margin: 0; overflow-y: scroll;}
-    #contents_top {position:fixed; width: 100%; background: white; padding: 5px 10px; left: 0; top: 0; border-bottom: 1px solid #ccc; text-align: center; z-index: 1; display: flex;}
+    body.dark {color: #ddd; background: #111;}
+    a:link {color: blue;} body.dark a:link {color: #99f;}
+    a:visited {color: purple;} body.dark a:visited {color: #f6f;}
+    a:active {color: red;} body.dark a:active {color: #f99;}
+    #contents_top {position:fixed; width: 100%; background: #fcfcfc; padding: 5px 10px; left: 0; top: 0; border-bottom: 1px solid #ccc; text-align: center; z-index: 1; display: flex;}
+    body.dark #contents_top {background: #333; border-bottom-color: #556;}
+    #contents_top > *:not(:first-child) {margin-left: 5px;}
     #contents_page {position:relative; padding: 10px; left: 0; z-index: 0;}
-    .button {background: #ddf; display: inline-block; height: 25px; line-height: 0.833; padding: 5px 10px; border-radius: 12.5px; cursor: pointer; transition: background-color 0.2s; vertical-align: middle;}
+    .button {background: #ddf; display: inline-block; height: 25px; line-height: 0.833; padding: 5px 10px; border: 1px solid #bbf; border-radius: 12.5px; cursor: pointer; vertical-align: middle; -ms-user-select: none; -moz-user-select: none; -webkit-user-select: none; -e-user-select: none; user-select: none;}
+    body.dark .button {color: white; background: #05a; border-color: #07e;}
+    .button.round {width: 25px; padding: 0; line-height: 21px; font-size: 15px;}
     .button.current, .button:hover {background: #99f;}
+    body.dark .button.current, body.dark .button:hover {background: #0080ff;}
     div.menu {display: inline-block; position: relative; text-align: left; height: 25px; overflow-y: visible;}
     .menu:hover .button {background: #99f;}
+    body.dark .menu:hover .button {background: #0080ff;}
     .updown {display: inline-block; width: 7px; height: 5px; border-width: 5px 3.5px 0 3.5px; border-color: transparent; border-top-color: black; border-style: solid; vertical-align: middle; margin-top: -2px;}
+    body.dark .updown {border-top-color: white;}
     .menu:hover > a > .updown, a:hover > .updown {border-width: 0 3.5px 5px 3.5px; border-top-color: transparent; border-bottom-color: black;}
+    body.dark .menu:hover > a > .updown, body.dark a:hover > .updown {border-bottom-color: white;}
     .menu ul {display: none; background: #ddf; margin: 0; padding: 0; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); font-size: 10pt; border-radius: 10px;}
-    .menu li {width: 100%; margin: 0; padding: 0; list-style-type: none; white-space: nowrap; cursor: pointer; position: relative; transition: background-color 0.2s;}
+    body.dark .menu ul {color: white; background: #05a;}
+    .menu li {width: 100%; margin: 0; padding: 0; list-style-type: none; white-space: nowrap; cursor: pointer; position: relative;}
     .menu li:first-child {border-radius: 10px 10px 0 0;}
     .menu li:last-child {border-radius: 0 0 10px 10px;}
     .menu li.separator {border-bottom: 1px solid #bbf;}
+    body.dark .menu li.separator {border-bottom-color: #49e;}
     .menu li:before {width:1em; display:block; position: absolute; left: 0; top: 0; pointer-events: none; text-align: center;}
     .menu li.sel:before {content: '\2714\fe0e';}
     .menu li:hover {background: #99f;}
+    body.dark .menu li:hover {background: #0080ff;}
     .menu li > a {width: 100%; display: block; padding: 2px 10px 2px calc(10px + 1em);}
     div.menu:hover > ul {display: block; position: absolute; left: 0; top: 25px;}
-    .search {border: #ccc; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5); display: inline-block; height: 25px; border-radius: 12.5px; position: relative; vertical-align: middle; text-align: left; flex: 1; margin-left: 10px;}
+    .search {background: white; border: 1px solid #ccc; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5); display: inline-block; height: 25px; border-radius: 12.5px; position: relative; vertical-align: middle; text-align: left; flex: 1;}
+    body.dark .search {color: white; background: black; border-color: #668; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.4);}
     .search:focus-within {background: #eef;}
+    body.dark .search:focus-within {background: #224;}
     .search:after {content: '\1f50d\fe0e'; display: block; width: 1em; position: absolute; right: 5px;}
     #search_text {position: absolute; width: calc(100% - 20px - 1em); height: 21px; left: 10px; top: 2px; vertical-align: middle; overflow: hidden;}
     #search_text:focus {outline:none;}
-    #search_results {display: none; position: absolute; width: 100%; min-width: 150px; right: 0; top: 25px; background: white; border: 1px solid #999; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);}
+    #search_results {display: none; position: absolute; width: 100%; min-width: 150px; right: 0; top: 25px; background: white; border: 1px solid #999; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden;}
+    body.dark #search_results {color: #eee; background: #333; border-color: #668;}
     #search_text:focus + #search_results.show, #search_results:not(.hide):hover, #search_results.show:focus-within {display:block;}
-    #search_results .result {padding: 2px 5px; cursor: pointer; transition: background-color 0.2s;}
+    #search_results .result {padding: 2px 5px; cursor: pointer;}
     #search_results .result.empty {text-align: center; cursor: default; padding: 5px 10px;}
     #search_results .result:hover {background: #eee;}
+    body.dark #search_results .result:hover {background: #556;}
     #search_results .name {font-size: 10pt; margin-left: 1em; text-indent: -1em;}
     #search_results .excerpt {font-size: 8pt;}
     dl, dd {margin-top: 0; margin-bottom: 0;}
     dd {margin-left: 0; padding-left: 1.5em;}
     dd.expand {display: block;}
     dl a {text-decoration: none;}
-    .expander {display: inline-block; vertical-align: baseline; width: 11px; height: 11px; margin-right: 1em; font-size: 8pt; text-align: center; cursor: pointer; background:url('data:image/png;charset=utf-8;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAMAAACecocUAAAACVBMVEWAgID///8AAADOvuwWAAAAJElEQVR42o3NoQ0AAAwCwcL+QyMoAtWeekHCFMQ2r6a991GvAhjAAF/WgxB1AAAAAElFTkSuQmCC');}
-    .expander.expand {background: url('data:image/png;charset=utf-8;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAMAAACecocUAAAACVBMVEWAgID///8AAADOvuwWAAAAIklEQVR42p3LMQoAAAzCQPX/j3YoUtxKb8oSFMa1Nfh4lwEXNABZXAgFLwAAAABJRU5ErkJggg==');}
+    .expander {display: inline-block; vertical-align: baseline; width: 11px; height: 11px; margin-right: 1em; font-size: 8pt; text-align: center; cursor: pointer; background:url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="23" height="23"%3E%3Cstyle%3E*%7Bstroke-width:1px;fill:transparent;%7D%3C/style%3E%3Cpath d="M 0.5,0.5 h 10 v 10 h -10 v -10 z m 5,2 v 6 m -3,-3 h 6" style="stroke:black"/%3E%3Cpath d="M 12.5,0.5 h 10 v 10 h -10 v -10 z m 2,5 h 6" style="stroke:black"/%3E%3Cpath d="M 0.5,12.5 h 10 v 10 h -10 v -10 z m 5,2 v 6 m -3,-3 h 6" style="stroke:white"/%3E%3Cpath d="M 12.5,12.5 h 10 v 10 h -10 v -10 z m 2,5 h 6" style="stroke:white"/%3E%3C/svg%3E') no-repeat;}
+    .expander.expand {display: inline-block; vertical-align: baseline; width: 11px; height: 11px; margin-right: 1em; font-size: 8pt; text-align: center; cursor: pointer; background-position-x: -12px;}
+    body.dark .expander {display: inline-block; vertical-align: baseline; width: 11px; height: 11px; margin-right: 1em; font-size: 8pt; text-align: center; cursor: pointer; background-position-y: -12px;}
     .expander.blank {background: none;}
     .expander img {cursor: pointer;}
     .sel > a {font-weight: bold;}
@@ -61,6 +81,7 @@
       if(typeof m.data != 'string') return;
       if(m.data.match(/^nav:/)) navTo(m.data.substr(4));
       if(m.data.match(/^search:/)) searchresults(JSON.parse(m.data.substr(7)));
+      if(m.data.match(/^dark:/)) document.body.classList.toggle('dark',!!JSON.parse(m.data.substr(5)));
     });
     //var plusimg = 'data:image/png;charset=utf-8;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAMAAACecocUAAAACVBMVEWAgID///8AAADOvuwWAAAAJElEQVR42o3NoQ0AAAwCwcL+QyMoAtWeekHCFMQ2r6a991GvAhjAAF/WgxB1AAAAAElFTkSuQmCC';
     //var minusimg = 'data:image/png;charset=utf-8;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAMAAACecocUAAAACVBMVEWAgID///8AAADOvuwWAAAAIklEQVR42p3LMQoAAAzCQPX/j3YoUtxKb8oSFMa1Nfh4lwEXNABZXAgFLwAAAABJRU5ErkJggg==';
@@ -330,6 +351,10 @@
         if(!box.nextSibling.getAttribute('href')) item.onclick = expand.bind(box);  // for an item with no link to navigate
       }
     }
+    function darktoggle() {
+      document.body.classList.toggle('dark');
+      window.parent.postMessage('dark:'+document.body.classList.contains('dark'), '*');
+    }
   //--></script>
 </head>
 <body bgcolor=#ffffff text=#000000 onload="begin()">
@@ -343,6 +368,7 @@
     <div id=search_text contenteditable=true></div>
     <div id=search_results></div>
   </div>
+  <div class="button round" onclick="darktoggle()" title="Toggle dark mode">&#x1f4a1;&#xfe0e;</div>
 </div>
 
 <div id="contents_page">
@@ -523,6 +549,7 @@
       <dt><a href=info.html#/client/proc/Del>Del</a>
       <dt><a href=info.html#/client/proc/East>East</a>
       <dt><a href=info.html#/client/proc/Export group="file">Export</a>
+      <dt><a href=info.html#/client/proc/GetAPI group="hub">GetAPI</a>
       <dt><a href=info.html#/client/proc/Import group="file">Import</a>
       <dt><a href=info.html#/client/proc/IsByondMember group="hub">IsByondMember</a>
       <dt><a href=info.html#/client/proc/MeasureText group="!effect">MeasureText</a>
@@ -540,6 +567,7 @@
       <dt><a href=info.html#/client/proc/Northeast>Northeast</a>
       <dt><a href=info.html#/client/proc/Northwest>Northwest</a>
       <dt><a href=info.html#/client/proc/SendPage>SendPage</a>
+      <dt><a href=info.html#/client/proc/SetAPI group="hub">SetAPI</a>
       <dt><a href=info.html#/client/proc/SoundQuery group="!sound">SoundQuery</a>
       <dt><a href=info.html#/client/proc/South>South</a>
       <dt><a href=info.html#/client/proc/Southeast>Southeast</a>
@@ -1332,6 +1360,7 @@
       <dt><a href=info.html#/{skin}/param/on-hide group="user">on-hide</a>
       <dt><a href=info.html#/{skin}/param/on-show group="user">on-show</a>
       <dt><a href=info.html#/{skin}/param/on-size group="user">on-size</a>
+      <dt><a href=info.html#/{skin}/param/on-status group="map,output">on-status</a>
       <dt><a href=info.html#/{skin}/param/on-tab group="user">on-tab</a>
       <dt><a href=info.html#/{skin}/param/outer-size>outer-size</a>
       <dt><a href=info.html#/{skin}/param/parent>parent</a>
